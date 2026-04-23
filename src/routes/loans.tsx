@@ -81,7 +81,7 @@ function LoansPage() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" | "disbursed" }) => {
-      const patch: Record<string, unknown> = { status };
+      const patch: { status: typeof status; approved_by?: string; disbursed_at?: string } = { status };
       if (status === "approved") patch.approved_by = user!.id;
       if (status === "disbursed") {
         patch.approved_by = user!.id;

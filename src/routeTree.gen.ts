@@ -9,17 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoansRouteImport } from './routes/loans'
 import { Route as LedgerRouteImport } from './routes/ledger'
 import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuditRouteImport } from './routes/audit'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicHooksLoanRemindersRouteImport } from './routes/api/public/hooks/loan-reminders'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -33,6 +41,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoansRoute = LoansRouteImport.update({
@@ -55,6 +68,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountsRoute = AccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
@@ -75,38 +93,47 @@ const ApiPublicHooksLoanRemindersRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
+  '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
+  '/notifications': typeof NotificationsRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/users': typeof UsersRoute
   '/api/public/hooks/loan-reminders': typeof ApiPublicHooksLoanRemindersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
+  '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
+  '/notifications': typeof NotificationsRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/users': typeof UsersRoute
   '/api/public/hooks/loan-reminders': typeof ApiPublicHooksLoanRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
+  '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
+  '/notifications': typeof NotificationsRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/users': typeof UsersRoute
   '/api/public/hooks/loan-reminders': typeof ApiPublicHooksLoanRemindersRoute
 }
 export interface FileRouteTypes {
@@ -114,55 +141,74 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/accounts'
+    | '/audit'
     | '/auth'
     | '/customers'
     | '/ledger'
     | '/loans'
+    | '/notifications'
     | '/reports'
     | '/settings'
     | '/transactions'
+    | '/users'
     | '/api/public/hooks/loan-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/accounts'
+    | '/audit'
     | '/auth'
     | '/customers'
     | '/ledger'
     | '/loans'
+    | '/notifications'
     | '/reports'
     | '/settings'
     | '/transactions'
+    | '/users'
     | '/api/public/hooks/loan-reminders'
   id:
     | '__root__'
     | '/'
     | '/accounts'
+    | '/audit'
     | '/auth'
     | '/customers'
     | '/ledger'
     | '/loans'
+    | '/notifications'
     | '/reports'
     | '/settings'
     | '/transactions'
+    | '/users'
     | '/api/public/hooks/loan-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRoute: typeof AccountsRoute
+  AuditRoute: typeof AuditRoute
   AuthRoute: typeof AuthRoute
   CustomersRoute: typeof CustomersRoute
   LedgerRoute: typeof LedgerRoute
   LoansRoute: typeof LoansRoute
+  NotificationsRoute: typeof NotificationsRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
+  UsersRoute: typeof UsersRoute
   ApiPublicHooksLoanRemindersRoute: typeof ApiPublicHooksLoanRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transactions': {
       id: '/transactions'
       path: '/transactions'
@@ -182,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/loans': {
@@ -212,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/accounts': {
       id: '/accounts'
       path: '/accounts'
@@ -239,13 +299,16 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRoute: AccountsRoute,
+  AuditRoute: AuditRoute,
   AuthRoute: AuthRoute,
   CustomersRoute: CustomersRoute,
   LedgerRoute: LedgerRoute,
   LoansRoute: LoansRoute,
+  NotificationsRoute: NotificationsRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,
+  UsersRoute: UsersRoute,
   ApiPublicHooksLoanRemindersRoute: ApiPublicHooksLoanRemindersRoute,
 }
 export const routeTree = rootRouteImport

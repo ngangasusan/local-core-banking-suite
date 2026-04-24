@@ -45,12 +45,34 @@ const NAV: NavItem[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, roles, signOut } = useAuth();
+  const { user, roles, signOut, hasRole } = useAuth();
+
+  const isAdmin = hasRole("admin") || hasRole("super_admin");
+  const isPrivileged = isAdmin || hasRole("auditor");
+
+  const { data: unread = 0 } = useQuery({
+    queryKey: ["unread-notif", user?.id],
+    enabled: !!user,
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("is_read", false);
+      return count ?? 0;
+    },
+  });
 
   const handleSignOut = async () => {
     await signOut();
     navigate({ to: "/auth" });
   };
+
+  const visibleNav = NAV.filter((n) => {
+    if (n.requireAdmin && !isAdmin) return false;
+    if (n.requirePrivileged && !isPrivileged) return false;
+    return true;
+  });
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -65,10 +87,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1">
-          {NAV.map(({ to, label, icon: Icon }) => {
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+          {visibleNav.map(({ to, label, icon: Icon }) => {
             const active =
               to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+            const showBadge = to === "/notifications" && unread > 0;
             return (
               <Link
                 key={to}
@@ -81,7 +104,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }
               >
                 <Icon className="h-4 w-4" />
-                {label}
+                <span className="flex-1">{label}</span>
+                {showBadge && (
+                  <span className="text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
+                    {unread}
+                  </span>
+                )}
               </Link>
             );
           })}

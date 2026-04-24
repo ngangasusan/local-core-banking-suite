@@ -207,6 +207,7 @@ function CustomersPage() {
                       <div className="inline-flex gap-1">
                         <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "verified" })}>Verify</Button>
                         <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "rejected" })}>Reject</Button>
+                        <CustomerEditDialog customer={c} />
                       </div>
                     </td>
                   </tr>

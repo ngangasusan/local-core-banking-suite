@@ -321,7 +321,14 @@ export type Database = {
     Enums: {
       account_status: "active" | "dormant" | "closed" | "frozen"
       account_type: "savings" | "current" | "fixed_deposit" | "loan"
-      app_role: "admin" | "manager" | "teller" | "loan_officer" | "auditor"
+      app_role:
+        | "admin"
+        | "manager"
+        | "teller"
+        | "loan_officer"
+        | "auditor"
+        | "super_admin"
+        | "finance_officer"
       customer_type: "individual" | "sme" | "corporate"
       kyc_status: "pending" | "verified" | "rejected"
       loan_method: "flat" | "reducing_balance" | "amortized"
@@ -333,6 +340,7 @@ export type Database = {
         | "closed"
         | "rejected"
         | "in_arrears"
+        | "draft"
       txn_status: "pending" | "completed" | "reversed" | "failed"
       txn_type:
         | "deposit"
@@ -471,7 +479,15 @@ export const Constants = {
     Enums: {
       account_status: ["active", "dormant", "closed", "frozen"],
       account_type: ["savings", "current", "fixed_deposit", "loan"],
-      app_role: ["admin", "manager", "teller", "loan_officer", "auditor"],
+      app_role: [
+        "admin",
+        "manager",
+        "teller",
+        "loan_officer",
+        "auditor",
+        "super_admin",
+        "finance_officer",
+      ],
       customer_type: ["individual", "sme", "corporate"],
       kyc_status: ["pending", "verified", "rejected"],
       loan_method: ["flat", "reducing_balance", "amortized"],
@@ -483,6 +499,7 @@ export const Constants = {
         "closed",
         "rejected",
         "in_arrears",
+        "draft",
       ],
       txn_status: ["pending", "completed", "reversed", "failed"],
       txn_type: [

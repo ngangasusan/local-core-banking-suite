@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
+import { Plus, Search, ShieldCheck, ShieldAlert, ShieldQuestion, Pencil } from "lucide-react";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { KycUpload } from "@/components/KycUpload";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/customers")({

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
+import { Plus, Search, ShieldCheck, ShieldAlert, ShieldQuestion, Pencil } from "lucide-react";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { KycUpload } from "@/components/KycUpload";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/customers")({
@@ -206,6 +207,7 @@ function CustomersPage() {
                       <div className="inline-flex gap-1">
                         <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "verified" })}>Verify</Button>
                         <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "rejected" })}>Reject</Button>
+                        <CustomerEditDialog customer={c} />
                       </div>
                     </td>
                   </tr>
@@ -219,11 +221,11 @@ function CustomersPage() {
   );
 }
 
-function Field({ label, name, type = "text", required }: { label: string; name: string; type?: string; required?: boolean }) {
+function Field({ label, name, type = "text", required, defaultValue }: { label: string; name: string; type?: string; required?: boolean; defaultValue?: string }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}{required && " *"}</Label>
-      <Input id={name} name={name} type={type} required={required} />
+      <Input id={name} name={name} type={type} required={required} defaultValue={defaultValue} />
     </div>
   );
 }
@@ -232,4 +234,48 @@ function KycBadge({ status }: { status: string }) {
   if (status === "verified") return <Badge className="bg-success text-success-foreground hover:bg-success"><ShieldCheck className="h-3 w-3 mr-1" />Verified</Badge>;
   if (status === "rejected") return <Badge variant="destructive"><ShieldAlert className="h-3 w-3 mr-1" />Rejected</Badge>;
   return <Badge variant="secondary"><ShieldQuestion className="h-3 w-3 mr-1" />Pending</Badge>;
+}
+
+type CustomerRow = { id: string; full_name: string; phone: string | null; email: string | null; address: string | null; city: string | null; occupation: string | null; national_id: string | null };
+
+function CustomerEditDialog({ customer }: { customer: CustomerRow }) {
+  const [open, setOpen] = useState(false);
+  const qc = useQueryClient();
+  const update = useMutation({
+    mutationFn: async (fd: FormData) => {
+      const d = Object.fromEntries(fd.entries()) as Record<string, string>;
+      const { error } = await supabase.from("customers").update({
+        full_name: d.full_name, phone: d.phone || null, email: d.email || null,
+        address: d.address || null, city: d.city || null, occupation: d.occupation || null,
+        national_id: d.national_id || null,
+      }).eq("id", customer.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Customer updated"); qc.invalidateQueries({ queryKey: ["customers"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><Button size="sm" variant="ghost"><Pencil className="h-3.5 w-3.5" /></Button></DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>Edit customer — {customer.full_name}</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); update.mutate(new FormData(e.currentTarget)); }}>
+            <Field label="Full name" name="full_name" required defaultValue={customer.full_name} />
+            <Field label="National ID" name="national_id" defaultValue={customer.national_id ?? ""} />
+            <Field label="Phone" name="phone" defaultValue={customer.phone ?? ""} />
+            <Field label="Email" name="email" type="email" defaultValue={customer.email ?? ""} />
+            <Field label="City" name="city" defaultValue={customer.city ?? ""} />
+            <Field label="Occupation" name="occupation" defaultValue={customer.occupation ?? ""} />
+            <div className="space-y-2"><Label>Address</Label><Textarea name="address" rows={2} defaultValue={customer.address ?? ""} /></div>
+            <Button type="submit" size="sm" disabled={update.isPending}>{update.isPending ? "Saving…" : "Save changes"}</Button>
+          </form>
+          <div>
+            <h4 className="text-sm font-semibold mb-2">KYC documents</h4>
+            <KycUpload customerId={customer.id} />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }

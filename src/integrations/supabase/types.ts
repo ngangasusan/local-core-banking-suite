@@ -64,6 +64,66 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      chart_of_accounts: {
+        Row: {
+          account_class: string
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          account_class: string
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          account_class?: string
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -78,6 +138,7 @@ export type Database = {
           employer: string | null
           full_name: string
           id: string
+          is_active: boolean
           kyc_notes: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           monthly_income: number | null
@@ -99,6 +160,7 @@ export type Database = {
           employer?: string | null
           full_name: string
           id?: string
+          is_active?: boolean
           kyc_notes?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           monthly_income?: number | null
@@ -120,6 +182,7 @@ export type Database = {
           employer?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean
           kyc_notes?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           monthly_income?: number | null
@@ -130,6 +193,200 @@ export type Database = {
         }
         Relationships: []
       }
+      email_queue: {
+        Row: {
+          attempts: number
+          body: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          last_error: string | null
+          loan_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          to_email: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          last_error?: string | null
+          loan_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          to_email: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          last_error?: string | null
+          loan_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          to_email?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          credit_account: string
+          debit_account: string
+          description: string | null
+          entry_date: string
+          id: string
+          reference: string
+          source_id: string | null
+          source_table: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          credit_account: string
+          debit_account: string
+          description?: string | null
+          entry_date?: string
+          id?: string
+          reference: string
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          credit_account?: string
+          debit_account?: string
+          description?: string | null
+          entry_date?: string
+          id?: string
+          reference?: string
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_credit_account_fkey"
+            columns: ["credit_account"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_debit_account_fkey"
+            columns: ["debit_account"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kyc_documents: {
+        Row: {
+          customer_id: string
+          doc_type: string
+          id: string
+          is_id_document: boolean
+          storage_path: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          customer_id: string
+          doc_type: string
+          id?: string
+          is_id_document?: boolean
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          customer_id?: string
+          doc_type?: string
+          id?: string
+          is_id_document?: boolean
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_documents_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_repayments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          loan_id: string
+          paid_at: string
+          posted_by: string | null
+          reference: string
+          reversal_reason: string | null
+          reversed: boolean
+          reversed_at: string | null
+          reversed_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          loan_id: string
+          paid_at?: string
+          posted_by?: string | null
+          reference: string
+          reversal_reason?: string | null
+          reversed?: boolean
+          reversed_at?: string | null
+          reversed_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          loan_id?: string
+          paid_at?: string
+          posted_by?: string | null
+          reference?: string
+          reversal_reason?: string | null
+          reversed?: boolean
+          reversed_at?: string | null
+          reversed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_repayments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_portfolio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_repayments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loans: {
         Row: {
           account_id: string | null
@@ -138,6 +395,8 @@ export type Database = {
           created_by: string | null
           customer_id: string
           disbursed_at: string | null
+          disbursement_date: string | null
+          due_date: string | null
           id: string
           interest_rate: number
           loan_number: string
@@ -146,7 +405,9 @@ export type Database = {
           outstanding_balance: number
           principal: number
           purpose: string | null
+          rejection_reason: string | null
           status: Database["public"]["Enums"]["loan_status"]
+          submitted_for_approval_at: string | null
           term_months: number
           updated_at: string
         }
@@ -157,6 +418,8 @@ export type Database = {
           created_by?: string | null
           customer_id: string
           disbursed_at?: string | null
+          disbursement_date?: string | null
+          due_date?: string | null
           id?: string
           interest_rate: number
           loan_number: string
@@ -165,7 +428,9 @@ export type Database = {
           outstanding_balance?: number
           principal: number
           purpose?: string | null
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["loan_status"]
+          submitted_for_approval_at?: string | null
           term_months: number
           updated_at?: string
         }
@@ -176,6 +441,8 @@ export type Database = {
           created_by?: string | null
           customer_id?: string
           disbursed_at?: string | null
+          disbursement_date?: string | null
+          due_date?: string | null
           id?: string
           interest_rate?: number
           loan_number?: string
@@ -184,7 +451,9 @@ export type Database = {
           outstanding_balance?: number
           principal?: number
           purpose?: string | null
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["loan_status"]
+          submitted_for_approval_at?: string | null
           term_months?: number
           updated_at?: string
         }
@@ -205,27 +474,158 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          category: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      permissions: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           branch: string | null
           created_at: string
+          email: string | null
           full_name: string
           id: string
+          is_active: boolean
           updated_at: string
         }
         Insert: {
           branch?: string | null
           created_at?: string
+          email?: string | null
           full_name: string
           id: string
+          is_active?: boolean
           updated_at?: string
         }
         Update: {
           branch?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          customer_id: string | null
+          id: string
+          last_error: string | null
+          loan_id: string | null
+          message: string
+          sent_at: string | null
+          status: string
+          to_phone: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          last_error?: string | null
+          loan_id?: string | null
+          message: string
+          sent_at?: string | null
+          status?: string
+          to_phone: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          last_error?: string | null
+          loan_id?: string | null
+          message?: string
+          sent_at?: string | null
+          status?: string
+          to_phone?: string
         }
         Relationships: []
       }
@@ -306,10 +706,100 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      loan_portfolio: {
+        Row: {
+          account_id: string | null
+          approved_by: string | null
+          created_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          disbursed_at: string | null
+          disbursement_date: string | null
+          due_date: string | null
+          id: string | null
+          interest_rate: number | null
+          loan_number: string | null
+          method: Database["public"]["Enums"]["loan_method"] | null
+          next_payment_date: string | null
+          outstanding_balance: number | null
+          principal: number | null
+          purpose: string | null
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["loan_status"] | null
+          submitted_for_approval_at: string | null
+          term_months: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          disbursed_at?: string | null
+          disbursement_date?: string | null
+          due_date?: string | null
+          id?: string | null
+          interest_rate?: number | null
+          loan_number?: string | null
+          method?: Database["public"]["Enums"]["loan_method"] | null
+          next_payment_date?: string | null
+          outstanding_balance?: number | null
+          principal?: number | null
+          purpose?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["loan_status"] | null
+          submitted_for_approval_at?: string | null
+          term_months?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          disbursed_at?: string | null
+          disbursement_date?: string | null
+          due_date?: string | null
+          id?: string | null
+          interest_rate?: number | null
+          loan_number?: string | null
+          method?: Database["public"]["Enums"]["loan_method"] | null
+          next_payment_date?: string | null
+          outstanding_balance?: number | null
+          principal?: number | null
+          purpose?: string | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["loan_status"] | null
+          submitted_for_approval_at?: string | null
+          term_months?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
+      has_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -317,11 +807,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_overdue_loans: { Args: never; Returns: undefined }
     }
     Enums: {
       account_status: "active" | "dormant" | "closed" | "frozen"
       account_type: "savings" | "current" | "fixed_deposit" | "loan"
-      app_role: "admin" | "manager" | "teller" | "loan_officer" | "auditor"
+      app_role:
+        | "admin"
+        | "manager"
+        | "teller"
+        | "loan_officer"
+        | "auditor"
+        | "super_admin"
+        | "finance_officer"
       customer_type: "individual" | "sme" | "corporate"
       kyc_status: "pending" | "verified" | "rejected"
       loan_method: "flat" | "reducing_balance" | "amortized"
@@ -333,6 +831,7 @@ export type Database = {
         | "closed"
         | "rejected"
         | "in_arrears"
+        | "draft"
       txn_status: "pending" | "completed" | "reversed" | "failed"
       txn_type:
         | "deposit"
@@ -471,7 +970,15 @@ export const Constants = {
     Enums: {
       account_status: ["active", "dormant", "closed", "frozen"],
       account_type: ["savings", "current", "fixed_deposit", "loan"],
-      app_role: ["admin", "manager", "teller", "loan_officer", "auditor"],
+      app_role: [
+        "admin",
+        "manager",
+        "teller",
+        "loan_officer",
+        "auditor",
+        "super_admin",
+        "finance_officer",
+      ],
       customer_type: ["individual", "sme", "corporate"],
       kyc_status: ["pending", "verified", "rejected"],
       loan_method: ["flat", "reducing_balance", "amortized"],
@@ -483,6 +990,7 @@ export const Constants = {
         "closed",
         "rejected",
         "in_arrears",
+        "draft",
       ],
       txn_status: ["pending", "completed", "reversed", "failed"],
       txn_type: [

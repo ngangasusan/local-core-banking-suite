@@ -26,7 +26,7 @@ function DashboardPage() {
       const [c, a, l, t] = await Promise.all([
         supabase.from("customers").select("*", { count: "exact", head: true }),
         supabase.from("accounts").select("balance"),
-        supabase.from("loans").select("outstanding_balance,status"),
+        supabase.from("loan_portfolio").select("outstanding_balance,status"),
         supabase.from("transactions").select("amount,created_at").gte("created_at", new Date(Date.now() - 86400000).toISOString()),
       ]);
       const totalDeposits = (a.data ?? []).reduce((s, r) => s + Number(r.balance || 0), 0);

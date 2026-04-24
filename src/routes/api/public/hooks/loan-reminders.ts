@@ -42,12 +42,10 @@ export const Route = createFileRoute("/api/public/hooks/loan-reminders")({
 
         let queued = 0;
         for (const l of loans ?? []) {
-          const customer = l.customer as {
-            id: string;
-            full_name: string;
-            phone: string | null;
-            email: string | null;
-          } | null;
+          const customerRaw = l.customer as unknown;
+          const customer = (Array.isArray(customerRaw) ? customerRaw[0] : customerRaw) as
+            | { id: string; full_name: string; phone: string | null; email: string | null }
+            | null;
           if (!customer) continue;
 
           const dueDate = new Date(l.due_date as string);

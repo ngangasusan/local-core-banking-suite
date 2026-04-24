@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Users,
@@ -11,11 +12,23 @@ import {
   Settings,
   LogOut,
   Building2,
+  Bell,
+  ShieldCheck,
+  UserCog,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
-const NAV = [
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  requireAdmin?: boolean;
+  requirePrivileged?: boolean;
+};
+
+const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/accounts", label: "Accounts", icon: Wallet },
@@ -23,8 +36,11 @@ const NAV = [
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/ledger", label: "General Ledger", icon: BookOpen },
   { to: "/reports", label: "Reports", icon: FileBarChart },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/users", label: "User Management", icon: UserCog, requireAdmin: true },
+  { to: "/audit", label: "Audit Log", icon: ShieldCheck, requirePrivileged: true },
   { to: "/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();

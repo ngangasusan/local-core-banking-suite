@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RepaymentDialog } from "@/components/RepaymentDialog";
+import { LoanDetailDialog } from "@/components/LoanDetailDialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/loans")({
@@ -26,6 +27,7 @@ function LoansPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [rejectFor, setRejectFor] = useState<string | null>(null);
+  const [detailLoan, setDetailLoan] = useState<any | null>(null);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
 
@@ -192,14 +194,14 @@ function LoansPage() {
               {loans.map((l) => {
                 const isCreator = l.created_by === user.id;
                 return (
-                  <tr key={l.id} className="border-t border-border hover:bg-muted/30">
+                  <tr key={l.id} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDetailLoan(l)}>
                     <td className="px-4 py-3 font-mono text-xs">{l.loan_number}</td>
                     <td className="px-4 py-3">{l.customer?.full_name ?? "—"}</td>
                     <td className="px-4 py-3 text-right font-mono">{fmt(Number(l.principal))}</td>
                     <td className="px-4 py-3 text-right font-mono">{fmt(Number(l.outstanding_balance))}</td>
                     <td className="px-4 py-3 text-xs">{l.due_date ?? "—"}</td>
                     <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex gap-1 flex-wrap justify-end">
                         {canCreate && l.status === "draft" && isCreator && (
                           <Button size="sm" variant="outline" onClick={() => submit.mutate(l.id)}>Submit</Button>
@@ -240,6 +242,8 @@ function LoansPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <LoanDetailDialog loan={detailLoan} open={!!detailLoan} onOpenChange={(o) => !o && setDetailLoan(null)} />
     </AppShell>
   );
 }

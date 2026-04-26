@@ -53,6 +53,20 @@ function TxnPage() {
     },
   });
 
+  const { data: activeLoans = [] } = useQuery({
+    queryKey: ["loans-active-min"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("loans")
+        .select("id, loan_number, outstanding_balance, customer:customers(full_name)")
+        .in("status", ["active", "in_arrears"])
+        .gt("outstanding_balance", 0)
+        .order("loan_number");
+      return data ?? [];
+    },
+  });
+
   const post = useMutation({
     mutationFn: async (fd: FormData) => {
       const d = Object.fromEntries(fd.entries()) as Record<string, string>;

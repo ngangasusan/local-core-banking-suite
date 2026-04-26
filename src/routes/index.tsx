@@ -44,6 +44,29 @@ function DashboardPage() {
     },
   });
 
+  const { data: dueSoon = [] } = useQuery({
+    queryKey: ["loans-due-soon"],
+    enabled: !!user,
+    queryFn: async () => {
+      const today = new Date();
+      const inWeek = new Date(Date.now() + 7 * 86400000);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("loans")
+        .select("id, loan_number, due_date, outstanding_balance, status, customer:customers(full_name)")
+        .in("status", ["active", "in_arrears"])
+        .gt("outstanding_balance", 0)
+        .lte("due_date", fmt(inWeek))
+        .order("due_date", { ascending: true })
+        .limit(20);
+      return (data ?? []).filter((l) => l.due_date).map((l) => {
+        const d = new Date(l.due_date as string);
+        const days = Math.floor((d.getTime() - today.getTime()) / 86400000);
+        return { ...l, daysToDue: days };
+      });
+    },
+  });
+
   if (loading || !user) return null;
 
   const cards = [

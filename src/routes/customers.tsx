@@ -274,6 +274,12 @@ function KycBadge({ status }: { status: string }) {
   return <Badge variant="secondary"><ShieldQuestion className="h-3 w-3 mr-1" />Pending</Badge>;
 }
 
+function CreditScoreBadge({ score }: { score: number }) {
+  const tone = score >= 720 ? "bg-success/15 text-success" : score >= 600 ? "bg-primary-soft text-primary" : score >= 500 ? "bg-warning/15 text-warning-foreground" : "bg-destructive/15 text-destructive";
+  const label = score >= 720 ? "Excellent" : score >= 600 ? "Good" : score >= 500 ? "Fair" : "Poor";
+  return <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium " + tone}><span className="font-mono">{score}</span><span className="opacity-70">{label}</span></span>;
+}
+
 type CustomerRow = { id: string; full_name: string; phone: string | null; email: string | null; address: string | null; city: string | null; occupation: string | null; national_id: string | null };
 
 function CustomerEditDialog({ customer }: { customer: CustomerRow }) {

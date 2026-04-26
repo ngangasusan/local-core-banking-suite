@@ -30,7 +30,7 @@ export const Route = createFileRoute("/customers")({
 const customerSchema = z.object({
   full_name: z.string().trim().min(2).max(120),
   customer_type: z.enum(["individual", "sme", "corporate"]),
-  national_id: z.string().trim().max(40).optional().or(z.literal("")),
+  national_id: z.string().trim().min(3, "National ID / Reg # is required").max(40),
   email: z.string().trim().email().max(150).optional().or(z.literal("")),
   phone: z.string().trim().max(40).optional().or(z.literal("")),
   address: z.string().trim().max(300).optional().or(z.literal("")),

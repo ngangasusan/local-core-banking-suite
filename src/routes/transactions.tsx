@@ -176,18 +176,35 @@ function TxnPage() {
                         <SelectItem value="deposit">Deposit</SelectItem>
                         <SelectItem value="withdrawal">Withdrawal</SelectItem>
                         <SelectItem value="transfer">Internal transfer</SelectItem>
+                        <SelectItem value="loan_repayment">Loan repayment</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{type === "transfer" ? "Source account" : "Account"}</Label>
-                    <Select name="account_id" required>
-                      <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((a) => (<SelectItem key={a.id} value={a.id}>{a.account_number} — {a.customer?.full_name}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {type === "loan_repayment" ? (
+                    <div className="space-y-2">
+                      <Label>Loan</Label>
+                      <Select name="loan_id" required>
+                        <SelectTrigger><SelectValue placeholder="Select loan" /></SelectTrigger>
+                        <SelectContent>
+                          {activeLoans.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>
+                              {l.loan_number} — {l.customer?.full_name} (bal {fmt(Number(l.outstanding_balance))})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>{type === "transfer" ? "Source account" : "Account"}</Label>
+                      <Select name="account_id" required>
+                        <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                        <SelectContent>
+                          {accounts.map((a) => (<SelectItem key={a.id} value={a.id}>{a.account_number} — {a.customer?.full_name}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   {type === "transfer" && (
                     <div className="space-y-2">
                       <Label>Destination account</Label>

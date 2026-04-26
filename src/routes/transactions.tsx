@@ -24,7 +24,7 @@ function TxnPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState<"deposit" | "withdrawal" | "transfer">("deposit");
+  const [type, setType] = useState<"deposit" | "withdrawal" | "transfer" | "loan_repayment">("deposit");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });

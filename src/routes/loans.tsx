@@ -27,6 +27,7 @@ function LoansPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [rejectFor, setRejectFor] = useState<string | null>(null);
+  const [detailLoan, setDetailLoan] = useState<typeof loans[number] | null>(null);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
 

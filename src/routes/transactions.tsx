@@ -145,6 +145,9 @@ function TxnPage() {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["accounts"] });
       qc.invalidateQueries({ queryKey: ["accounts-min"] });
+      qc.invalidateQueries({ queryKey: ["loans"] });
+      qc.invalidateQueries({ queryKey: ["loans-active-min"] });
+      qc.invalidateQueries({ queryKey: ["customers"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setOpen(false);
     },

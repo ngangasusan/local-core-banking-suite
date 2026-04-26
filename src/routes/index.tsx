@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Wallet, Banknote, ArrowLeftRight, TrendingUp, AlertTriangle } from "lucide-react";
+import { Users, Wallet, Banknote, ArrowLeftRight, TrendingUp, AlertTriangle, CalendarClock } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";

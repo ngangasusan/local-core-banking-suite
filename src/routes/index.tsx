@@ -131,6 +131,52 @@ function DashboardPage() {
             </div>
           </div>
         </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-semibold flex items-center gap-2"><CalendarClock className="h-4 w-4 text-primary" />Loans due in the next 7 days</h3>
+              <p className="text-sm text-muted-foreground">Customers to follow up with this week. Includes loans already overdue.</p>
+            </div>
+            <Link to="/loans" className="text-sm text-primary hover:underline">View all loans →</Link>
+          </div>
+          {dueSoon.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">No loans due within 7 days. ✅</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="text-left py-2 pr-4 font-medium">Loan #</th>
+                    <th className="text-left py-2 pr-4 font-medium">Customer</th>
+                    <th className="text-left py-2 pr-4 font-medium">Due date</th>
+                    <th className="text-left py-2 pr-4 font-medium">When</th>
+                    <th className="text-right py-2 font-medium">Outstanding</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dueSoon.map((l) => {
+                    const overdue = l.daysToDue < 0;
+                    const today = l.daysToDue === 0;
+                    return (
+                      <tr key={l.id} className="border-t border-border">
+                        <td className="py-2 pr-4 font-mono text-xs">{l.loan_number}</td>
+                        <td className="py-2 pr-4">{l.customer?.full_name ?? "—"}</td>
+                        <td className="py-2 pr-4 text-xs">{l.due_date}</td>
+                        <td className="py-2 pr-4">
+                          <span className={"text-xs px-2 py-0.5 rounded font-medium " + (overdue ? "bg-destructive/15 text-destructive" : today ? "bg-warning/15 text-warning-foreground" : "bg-primary-soft text-primary")}>
+                            {overdue ? `${Math.abs(l.daysToDue)}d overdue` : today ? "due today" : `in ${l.daysToDue}d`}
+                          </span>
+                        </td>
+                        <td className="py-2 text-right font-mono">{fmtKES(Number(l.outstanding_balance))}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </AppShell>
   );

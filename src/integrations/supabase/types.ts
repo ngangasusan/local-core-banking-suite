@@ -131,6 +131,7 @@ export type Database = {
           country: string | null
           created_at: string
           created_by: string | null
+          credit_score: number
           customer_number: string
           customer_type: Database["public"]["Enums"]["customer_type"]
           date_of_birth: string | null
@@ -153,6 +154,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           created_by?: string | null
+          credit_score?: number
           customer_number: string
           customer_type?: Database["public"]["Enums"]["customer_type"]
           date_of_birth?: string | null
@@ -175,6 +177,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           created_by?: string | null
+          credit_score?: number
           customer_number?: string
           customer_type?: Database["public"]["Enums"]["customer_type"]
           date_of_birth?: string | null
@@ -808,6 +811,10 @@ export type Database = {
         Returns: boolean
       }
       mark_overdue_loans: { Args: never; Returns: undefined }
+      recompute_credit_score: {
+        Args: { _customer_id: string }
+        Returns: number
+      }
     }
     Enums: {
       account_status: "active" | "dormant" | "closed" | "frozen"

@@ -194,14 +194,14 @@ function LoansPage() {
               {loans.map((l) => {
                 const isCreator = l.created_by === user.id;
                 return (
-                  <tr key={l.id} className="border-t border-border hover:bg-muted/30">
+                  <tr key={l.id} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDetailLoan(l)}>
                     <td className="px-4 py-3 font-mono text-xs">{l.loan_number}</td>
                     <td className="px-4 py-3">{l.customer?.full_name ?? "—"}</td>
                     <td className="px-4 py-3 text-right font-mono">{fmt(Number(l.principal))}</td>
                     <td className="px-4 py-3 text-right font-mono">{fmt(Number(l.outstanding_balance))}</td>
                     <td className="px-4 py-3 text-xs">{l.due_date ?? "—"}</td>
                     <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex gap-1 flex-wrap justify-end">
                         {canCreate && l.status === "draft" && isCreator && (
                           <Button size="sm" variant="outline" onClick={() => submit.mutate(l.id)}>Submit</Button>

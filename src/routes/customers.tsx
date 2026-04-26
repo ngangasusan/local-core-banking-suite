@@ -67,12 +67,26 @@ function CustomersPage() {
     mutationFn: async (form: FormData) => {
       const raw = Object.fromEntries(form.entries()) as Record<string, string>;
       const parsed = customerSchema.parse(raw);
+      const idFile = form.get("id_document") as File | null;
+      if (!idFile || idFile.size === 0) throw new Error("ID document upload is required");
+
+      // Pre-check duplicates for friendly messaging
+      const { data: existing } = await supabase
+        .from("customers")
+        .select("id, full_name, customer_number, national_id, phone")
+        .or(`national_id.eq.${parsed.national_id}${parsed.phone ? `,phone.eq.${parsed.phone}` : ""}`)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        const e = existing[0];
+        throw new Error(`Customer already exists: ${e.full_name} (${e.customer_number}) — ID/phone matches.`);
+      }
+
       const customer_number = "C" + Date.now().toString().slice(-9);
-      const { error } = await supabase.from("customers").insert({
+      const { data: inserted, error } = await supabase.from("customers").insert({
         customer_number,
         full_name: parsed.full_name,
         customer_type: parsed.customer_type,
-        national_id: parsed.national_id || null,
+        national_id: parsed.national_id,
         email: parsed.email || null,
         phone: parsed.phone || null,
         address: parsed.address || null,
@@ -81,8 +95,23 @@ function CustomersPage() {
         monthly_income: parsed.monthly_income ? Number(parsed.monthly_income) : null,
         kyc_notes: parsed.kyc_notes || null,
         created_by: user!.id,
+      }).select("id").single();
+      if (error) {
+        if (error.code === "23505") throw new Error("Customer with this National ID or phone already exists.");
+        throw error;
+      }
+
+      // Upload ID document
+      const path = `${inserted.id}/${Date.now()}_${idFile.name}`;
+      const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, idFile);
+      if (upErr) throw upErr;
+      await supabase.from("kyc_documents").insert({
+        customer_id: inserted.id,
+        doc_type: "National ID",
+        storage_path: path,
+        is_id_document: true,
+        uploaded_by: user!.id,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Customer created");

@@ -30,7 +30,7 @@ export const Route = createFileRoute("/customers")({
 const customerSchema = z.object({
   full_name: z.string().trim().min(2).max(120),
   customer_type: z.enum(["individual", "sme", "corporate"]),
-  national_id: z.string().trim().max(40).optional().or(z.literal("")),
+  national_id: z.string().trim().min(3, "National ID / Reg # is required").max(40),
   email: z.string().trim().email().max(150).optional().or(z.literal("")),
   phone: z.string().trim().max(40).optional().or(z.literal("")),
   address: z.string().trim().max(300).optional().or(z.literal("")),
@@ -67,12 +67,26 @@ function CustomersPage() {
     mutationFn: async (form: FormData) => {
       const raw = Object.fromEntries(form.entries()) as Record<string, string>;
       const parsed = customerSchema.parse(raw);
+      const idFile = form.get("id_document") as File | null;
+      if (!idFile || idFile.size === 0) throw new Error("ID document upload is required");
+
+      // Pre-check duplicates for friendly messaging
+      const { data: existing } = await supabase
+        .from("customers")
+        .select("id, full_name, customer_number, national_id, phone")
+        .or(`national_id.eq.${parsed.national_id}${parsed.phone ? `,phone.eq.${parsed.phone}` : ""}`)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        const e = existing[0];
+        throw new Error(`Customer already exists: ${e.full_name} (${e.customer_number}) — ID/phone matches.`);
+      }
+
       const customer_number = "C" + Date.now().toString().slice(-9);
-      const { error } = await supabase.from("customers").insert({
+      const { data: inserted, error } = await supabase.from("customers").insert({
         customer_number,
         full_name: parsed.full_name,
         customer_type: parsed.customer_type,
-        national_id: parsed.national_id || null,
+        national_id: parsed.national_id,
         email: parsed.email || null,
         phone: parsed.phone || null,
         address: parsed.address || null,
@@ -81,8 +95,23 @@ function CustomersPage() {
         monthly_income: parsed.monthly_income ? Number(parsed.monthly_income) : null,
         kyc_notes: parsed.kyc_notes || null,
         created_by: user!.id,
+      }).select("id").single();
+      if (error) {
+        if (error.code === "23505") throw new Error("Customer with this National ID or phone already exists.");
+        throw error;
+      }
+
+      // Upload ID document
+      const path = `${inserted.id}/${Date.now()}_${idFile.name}`;
+      const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, idFile);
+      if (upErr) throw upErr;
+      await supabase.from("kyc_documents").insert({
+        customer_id: inserted.id,
+        doc_type: "National ID",
+        storage_path: path,
+        is_id_document: true,
+        uploaded_by: user!.id,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Customer created");
@@ -142,12 +171,17 @@ function CustomersPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Field label="National ID / Reg #" name="national_id" />
+                  <Field label="National ID / Reg #" name="national_id" required />
                   <Field label="Email" name="email" type="email" />
                   <Field label="Phone" name="phone" />
                   <Field label="City" name="city" />
                   <Field label="Occupation" name="occupation" />
                   <Field label="Monthly income (KES)" name="monthly_income" type="number" />
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label htmlFor="id_document">ID document upload *</Label>
+                    <Input id="id_document" name="id_document" type="file" accept="image/*,application/pdf" required />
+                    <p className="text-xs text-muted-foreground">Upload National ID, Passport, or business registration. Required for KYC.</p>
+                  </div>
                   <div className="sm:col-span-2 space-y-2">
                     <Label>Address</Label>
                     <Textarea name="address" rows={2} />
@@ -186,23 +220,27 @@ function CustomersPage() {
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Customer #</th>
                   <th className="text-left px-4 py-3 font-medium">Name</th>
+                  <th className="text-left px-4 py-3 font-medium">National ID</th>
                   <th className="text-left px-4 py-3 font-medium">Type</th>
                   <th className="text-left px-4 py-3 font-medium">Phone</th>
                   <th className="text-left px-4 py-3 font-medium">KYC</th>
+                  <th className="text-left px-4 py-3 font-medium">Credit Score</th>
                   <th className="text-right px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {customers.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-12 text-muted-foreground">No customers yet. Create your first one.</td></tr>
+                  <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No customers yet. Create your first one.</td></tr>
                 )}
                 {customers.map((c) => (
                   <tr key={c.id} className="border-t border-border hover:bg-muted/30">
                     <td className="px-4 py-3 font-mono text-xs">{c.customer_number}</td>
                     <td className="px-4 py-3 font-medium">{c.full_name}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{c.national_id || "—"}</td>
                     <td className="px-4 py-3 capitalize">{c.customer_type}</td>
                     <td className="px-4 py-3 text-muted-foreground">{c.phone || "—"}</td>
                     <td className="px-4 py-3"><KycBadge status={c.kyc_status} /></td>
+                    <td className="px-4 py-3"><CreditScoreBadge score={c.credit_score ?? 650} /></td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex gap-1">
                         <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "verified" })}>Verify</Button>
@@ -234,6 +272,12 @@ function KycBadge({ status }: { status: string }) {
   if (status === "verified") return <Badge className="bg-success text-success-foreground hover:bg-success"><ShieldCheck className="h-3 w-3 mr-1" />Verified</Badge>;
   if (status === "rejected") return <Badge variant="destructive"><ShieldAlert className="h-3 w-3 mr-1" />Rejected</Badge>;
   return <Badge variant="secondary"><ShieldQuestion className="h-3 w-3 mr-1" />Pending</Badge>;
+}
+
+function CreditScoreBadge({ score }: { score: number }) {
+  const tone = score >= 720 ? "bg-success/15 text-success" : score >= 600 ? "bg-primary-soft text-primary" : score >= 500 ? "bg-warning/15 text-warning-foreground" : "bg-destructive/15 text-destructive";
+  const label = score >= 720 ? "Excellent" : score >= 600 ? "Good" : score >= 500 ? "Fair" : "Poor";
+  return <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium " + tone}><span className="font-mono">{score}</span><span className="opacity-70">{label}</span></span>;
 }
 
 type CustomerRow = { id: string; full_name: string; phone: string | null; email: string | null; address: string | null; city: string | null; occupation: string | null; national_id: string | null };

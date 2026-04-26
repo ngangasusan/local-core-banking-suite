@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Wallet, Banknote, ArrowLeftRight, TrendingUp, AlertTriangle } from "lucide-react";
+import { Users, Wallet, Banknote, ArrowLeftRight, TrendingUp, AlertTriangle, CalendarClock } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -41,6 +41,29 @@ function DashboardPage() {
         txnVol,
         txnCount: t.data?.length ?? 0,
       };
+    },
+  });
+
+  const { data: dueSoon = [] } = useQuery({
+    queryKey: ["loans-due-soon"],
+    enabled: !!user,
+    queryFn: async () => {
+      const today = new Date();
+      const inWeek = new Date(Date.now() + 7 * 86400000);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("loans")
+        .select("id, loan_number, due_date, outstanding_balance, status, customer:customers(full_name)")
+        .in("status", ["active", "in_arrears"])
+        .gt("outstanding_balance", 0)
+        .lte("due_date", fmt(inWeek))
+        .order("due_date", { ascending: true })
+        .limit(20);
+      return (data ?? []).filter((l) => l.due_date).map((l) => {
+        const d = new Date(l.due_date as string);
+        const days = Math.floor((d.getTime() - today.getTime()) / 86400000);
+        return { ...l, daysToDue: days };
+      });
     },
   });
 
@@ -107,6 +130,52 @@ function DashboardPage() {
               </Link>
             </div>
           </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-semibold flex items-center gap-2"><CalendarClock className="h-4 w-4 text-primary" />Loans due in the next 7 days</h3>
+              <p className="text-sm text-muted-foreground">Customers to follow up with this week. Includes loans already overdue.</p>
+            </div>
+            <Link to="/loans" className="text-sm text-primary hover:underline">View all loans →</Link>
+          </div>
+          {dueSoon.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">No loans due within 7 days. ✅</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="text-left py-2 pr-4 font-medium">Loan #</th>
+                    <th className="text-left py-2 pr-4 font-medium">Customer</th>
+                    <th className="text-left py-2 pr-4 font-medium">Due date</th>
+                    <th className="text-left py-2 pr-4 font-medium">When</th>
+                    <th className="text-right py-2 font-medium">Outstanding</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dueSoon.map((l) => {
+                    const overdue = l.daysToDue < 0;
+                    const today = l.daysToDue === 0;
+                    return (
+                      <tr key={l.id} className="border-t border-border">
+                        <td className="py-2 pr-4 font-mono text-xs">{l.loan_number}</td>
+                        <td className="py-2 pr-4">{l.customer?.full_name ?? "—"}</td>
+                        <td className="py-2 pr-4 text-xs">{l.due_date}</td>
+                        <td className="py-2 pr-4">
+                          <span className={"text-xs px-2 py-0.5 rounded font-medium " + (overdue ? "bg-destructive/15 text-destructive" : today ? "bg-warning/15 text-warning-foreground" : "bg-primary-soft text-primary")}>
+                            {overdue ? `${Math.abs(l.daysToDue)}d overdue` : today ? "due today" : `in ${l.daysToDue}d`}
+                          </span>
+                        </td>
+                        <td className="py-2 text-right font-mono">{fmtKES(Number(l.outstanding_balance))}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

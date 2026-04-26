@@ -24,7 +24,7 @@ function TxnPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState<"deposit" | "withdrawal" | "transfer">("deposit");
+  const [type, setType] = useState<"deposit" | "withdrawal" | "transfer" | "loan_repayment">("deposit");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -53,12 +53,56 @@ function TxnPage() {
     },
   });
 
+  const { data: activeLoans = [] } = useQuery({
+    queryKey: ["loans-active-min"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("loans")
+        .select("id, loan_number, outstanding_balance, customer:customers(full_name)")
+        .in("status", ["active", "in_arrears"])
+        .gt("outstanding_balance", 0)
+        .order("loan_number");
+      return data ?? [];
+    },
+  });
+
   const post = useMutation({
     mutationFn: async (fd: FormData) => {
       const d = Object.fromEntries(fd.entries()) as Record<string, string>;
       const amount = Number(d.amount);
       if (amount <= 0) throw new Error("Amount must be positive");
       const reference = "TX" + Date.now();
+
+      // Loan repayment branch — uses repayments table; trigger reduces balance + recomputes credit score
+      if (type === "loan_repayment") {
+        const loan = activeLoans.find((l) => l.id === d.loan_id);
+        if (!loan) throw new Error("Select a loan");
+        if (amount > Number(loan.outstanding_balance)) throw new Error("Amount exceeds outstanding balance");
+        const ref = "RP" + Date.now().toString().slice(-9);
+        const { error: rerr } = await supabase.from("loan_repayments").insert({
+          loan_id: d.loan_id, amount, reference: ref, posted_by: user!.id,
+        });
+        if (rerr) throw rerr;
+        const { error: terr } = await supabase.from("transactions").insert({
+          reference: ref, txn_type: "loan_repayment", amount,
+          description: d.description || `Repayment for ${loan.loan_number}`,
+          performed_by: user!.id,
+        });
+        if (terr) throw terr;
+        // GL: Cash Dr / Loans Receivable Cr
+        const { data: coa } = await supabase.from("chart_of_accounts").select("id, code").in("code", ["1000", "1100"]);
+        const cash = coa?.find((c) => c.code === "1000")?.id;
+        const loanRec = coa?.find((c) => c.code === "1100")?.id;
+        if (cash && loanRec) {
+          await supabase.from("journal_entries").insert({
+            reference: ref, description: `Repayment ${loan.loan_number}`,
+            debit_account: cash, credit_account: loanRec, amount,
+            source_table: "loan_repayments", source_id: null, created_by: user!.id,
+          });
+        }
+        return;
+      }
 
       const acct = accounts.find((a) => a.id === d.account_id);
       if (!acct) throw new Error("Account not found");
@@ -101,6 +145,9 @@ function TxnPage() {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["accounts"] });
       qc.invalidateQueries({ queryKey: ["accounts-min"] });
+      qc.invalidateQueries({ queryKey: ["loans"] });
+      qc.invalidateQueries({ queryKey: ["loans-active-min"] });
+      qc.invalidateQueries({ queryKey: ["customers"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setOpen(false);
     },
@@ -129,18 +176,35 @@ function TxnPage() {
                         <SelectItem value="deposit">Deposit</SelectItem>
                         <SelectItem value="withdrawal">Withdrawal</SelectItem>
                         <SelectItem value="transfer">Internal transfer</SelectItem>
+                        <SelectItem value="loan_repayment">Loan repayment</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{type === "transfer" ? "Source account" : "Account"}</Label>
-                    <Select name="account_id" required>
-                      <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((a) => (<SelectItem key={a.id} value={a.id}>{a.account_number} — {a.customer?.full_name}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {type === "loan_repayment" ? (
+                    <div className="space-y-2">
+                      <Label>Loan</Label>
+                      <Select name="loan_id" required>
+                        <SelectTrigger><SelectValue placeholder="Select loan" /></SelectTrigger>
+                        <SelectContent>
+                          {activeLoans.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>
+                              {l.loan_number} — {l.customer?.full_name} (bal {fmt(Number(l.outstanding_balance))})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>{type === "transfer" ? "Source account" : "Account"}</Label>
+                      <Select name="account_id" required>
+                        <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                        <SelectContent>
+                          {accounts.map((a) => (<SelectItem key={a.id} value={a.id}>{a.account_number} — {a.customer?.full_name}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   {type === "transfer" && (
                     <div className="space-y-2">
                       <Label>Destination account</Label>

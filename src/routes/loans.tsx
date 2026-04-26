@@ -204,13 +204,15 @@ function LoansPage() {
                         {canCreate && l.status === "draft" && isCreator && (
                           <Button size="sm" variant="outline" onClick={() => submit.mutate(l.id)}>Submit</Button>
                         )}
-                        {canApprove && l.status === "pending" && !isCreator && (
+                        {canApprove && l.status === "pending" && (!isCreator || hasRole("super_admin")) && (
                           <>
-                            <Button size="sm" variant="outline" onClick={() => approve.mutate(l.id)}>Approve</Button>
+                            <Button size="sm" variant="outline" onClick={() => approve.mutate(l.id)}>
+                              Approve{isCreator && hasRole("super_admin") ? " (bypass)" : ""}
+                            </Button>
                             <Button size="sm" variant="ghost" onClick={() => setRejectFor(l.id)}>Reject</Button>
                           </>
                         )}
-                        {canApprove && l.status === "pending" && isCreator && (
+                        {canApprove && l.status === "pending" && isCreator && !hasRole("super_admin") && (
                           <span className="text-xs text-muted-foreground italic">awaiting checker</span>
                         )}
                         {canApprove && l.status === "approved" && (

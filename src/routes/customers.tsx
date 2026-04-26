@@ -171,12 +171,17 @@ function CustomersPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Field label="National ID / Reg #" name="national_id" />
+                  <Field label="National ID / Reg #" name="national_id" required />
                   <Field label="Email" name="email" type="email" />
                   <Field label="Phone" name="phone" />
                   <Field label="City" name="city" />
                   <Field label="Occupation" name="occupation" />
                   <Field label="Monthly income (KES)" name="monthly_income" type="number" />
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label htmlFor="id_document">ID document upload *</Label>
+                    <Input id="id_document" name="id_document" type="file" accept="image/*,application/pdf" required />
+                    <p className="text-xs text-muted-foreground">Upload National ID, Passport, or business registration. Required for KYC.</p>
+                  </div>
                   <div className="sm:col-span-2 space-y-2">
                     <Label>Address</Label>
                     <Textarea name="address" rows={2} />

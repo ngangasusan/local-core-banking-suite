@@ -35,7 +35,11 @@ function UsersPage() {
   return (
     <AppShell>
       <div className="p-6 lg:p-10 max-w-7xl mx-auto">
-        <PageHeader title="User Management" description="Manage staff users, roles, and role permissions." />
+        <PageHeader
+          title="User Management"
+          description="Manage staff users, roles, and role permissions."
+          actions={<CreateUserDialog />}
+        />
         <Tabs defaultValue="users">
           <TabsList>
             <TabsTrigger value="users">Users</TabsTrigger>
@@ -46,6 +50,59 @@ function UsersPage() {
         </Tabs>
       </div>
     </AppShell>
+  );
+}
+
+function CreateUserDialog() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [role, setRole] = useState<AppRole>("teller");
+
+  const create = useMutation({
+    mutationFn: async (fd: FormData) => {
+      const payload = {
+        full_name: String(fd.get("full_name") || ""),
+        email: String(fd.get("email") || ""),
+        password: String(fd.get("password") || ""),
+        role,
+      };
+      if (payload.password.length < 8) throw new Error("Password must be at least 8 characters");
+      const { data, error } = await supabase.functions.invoke("admin-create-user", { body: payload });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      toast.success("User created");
+      qc.invalidateQueries({ queryKey: ["users-list"] });
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />New user</Button></DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Create staff user</DialogTitle></DialogHeader>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); create.mutate(new FormData(e.currentTarget)); }}>
+          <div className="space-y-2"><Label>Full name</Label><Input name="full_name" required /></div>
+          <div className="space-y-2"><Label>Email</Label><Input name="email" type="email" required /></div>
+          <div className="space-y-2"><Label>Temporary password</Label><Input name="password" type="text" required minLength={8} /></div>
+          <div className="space-y-2">
+            <Label>Initial role</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ALL_ROLES.map((r) => <SelectItem key={r} value={r} className="capitalize">{r.replace("_", " ")}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={create.isPending}>{create.isPending ? "Creating…" : "Create user"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

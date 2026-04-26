@@ -242,6 +242,8 @@ function LoansPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <LoanDetailDialog loan={detailLoan} open={!!detailLoan} onOpenChange={(o) => !o && setDetailLoan(null)} />
     </AppShell>
   );
 }

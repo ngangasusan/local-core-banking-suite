@@ -220,23 +220,27 @@ function CustomersPage() {
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Customer #</th>
                   <th className="text-left px-4 py-3 font-medium">Name</th>
+                  <th className="text-left px-4 py-3 font-medium">National ID</th>
                   <th className="text-left px-4 py-3 font-medium">Type</th>
                   <th className="text-left px-4 py-3 font-medium">Phone</th>
                   <th className="text-left px-4 py-3 font-medium">KYC</th>
+                  <th className="text-left px-4 py-3 font-medium">Credit Score</th>
                   <th className="text-right px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {customers.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-12 text-muted-foreground">No customers yet. Create your first one.</td></tr>
+                  <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No customers yet. Create your first one.</td></tr>
                 )}
                 {customers.map((c) => (
                   <tr key={c.id} className="border-t border-border hover:bg-muted/30">
                     <td className="px-4 py-3 font-mono text-xs">{c.customer_number}</td>
                     <td className="px-4 py-3 font-medium">{c.full_name}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{c.national_id || "—"}</td>
                     <td className="px-4 py-3 capitalize">{c.customer_type}</td>
                     <td className="px-4 py-3 text-muted-foreground">{c.phone || "—"}</td>
                     <td className="px-4 py-3"><KycBadge status={c.kyc_status} /></td>
+                    <td className="px-4 py-3"><CreditScoreBadge score={c.credit_score ?? 650} /></td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex gap-1">
                         <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "verified" })}>Verify</Button>

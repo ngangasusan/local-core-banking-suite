@@ -1,38 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 
 type LoanLite = {
   id: string;
   loan_number: string;
   principal: number | string;
-  interest_rate: number | string;
-  term_months: number;
-  method: string;
   status: string;
   outstanding_balance: number | string;
   due_date: string | null;
   disbursement_date: string | null;
+  projected_payment_date?: string | null;
   customer?: { full_name: string; customer_number: string } | null;
 };
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 2 }).format(n);
-}
-
-function computeTotalDue(principal: number, rate: number, termMonths: number, method: string) {
-  // Simple/flat: principal * (1 + r * t/12). For reducing/amortized we approximate with same flat formula
-  // for the "amount to be paid" headline (principal + interest over the term).
-  const years = termMonths / 12;
-  if (method === "amortized" || method === "reducing_balance") {
-    // Amortized total: monthly payment * months. Use standard amortization; if rate=0 → principal.
-    const r = rate / 100 / 12;
-    if (r === 0) return principal;
-    const m = (principal * r) / (1 - Math.pow(1 + r, -termMonths));
-    return m * termMonths;
-  }
-  // flat
-  return principal * (1 + (rate / 100) * years);
 }
 
 export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite | null; open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -52,38 +36,44 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
 
   if (!loan) return null;
   const principal = Number(loan.principal);
-  const rate = Number(loan.interest_rate);
-  const totalDue = computeTotalDue(principal, rate, loan.term_months, loan.method);
-  const interest = totalDue - principal;
+  const days = loanDaysElapsed(loan.disbursement_date);
+  const { interest, mpesa, total } = computeTotalDue(principal, days);
   const activePayments = payments.filter((p) => !p.reversed);
   const paymentsCount = activePayments.length;
   const paidSum = activePayments.reduce((s, p) => s + Number(p.amount), 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Loan {loan.loan_number} — {loan.customer?.full_name ?? "—"}</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
           <Stat label="Principal" value={fmt(principal)} />
-          <Stat label="Interest" value={fmt(interest)} />
-          <Stat label="Total payable" value={fmt(totalDue)} highlight />
+          <Stat label={`Interest (day ${days})`} value={fmt(interest)} />
+          <Stat label="Total payable" value={fmt(total)} highlight />
           <Stat label="Paid to date" value={fmt(paidSum)} />
           <Stat label="Outstanding" value={fmt(Number(loan.outstanding_balance))} />
-          <Stat label="Payments made" value={String(paymentsCount)} />
-          <Stat label="Rate" value={`${rate}% (${loan.method.replace("_", " ")})`} />
-          <Stat label="Term" value={`${loan.term_months} months`} />
+          <Stat label="Payments made" value={String(paymentsCount)} highlight />
+          {mpesa > 0 && <Stat label="M-Pesa charge (≤5d)" value={fmt(mpesa)} />}
+          <Stat label="Disbursed" value={loan.disbursement_date ?? "—"} />
           <Stat label="Due date" value={loan.due_date ?? "—"} />
+          {loan.projected_payment_date && <Stat label="Projected payment" value={loan.projected_payment_date} />}
         </div>
 
+        <p className="text-xs text-muted-foreground mt-2">
+          Rule: minimum interest 10% of principal; daily 20 per 1,000 from day 1; capped at 30% after 14 days.
+          {days <= 5 && " M-Pesa send charge included while still within 5 days."}
+        </p>
+
         <div className="mt-4">
-          <h3 className="text-sm font-medium mb-2">Payment history ({paymentsCount})</h3>
+          <h3 className="text-sm font-medium mb-2">Payment history ({paymentsCount} payment{paymentsCount === 1 ? "" : "s"})</h3>
           <div className="border border-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                 <tr>
+                  <th className="text-left px-3 py-2 font-medium">#</th>
                   <th className="text-left px-3 py-2 font-medium">Date</th>
                   <th className="text-left px-3 py-2 font-medium">Reference</th>
                   <th className="text-right px-3 py-2 font-medium">Amount</th>
@@ -92,10 +82,11 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
               </thead>
               <tbody>
                 {payments.length === 0 && (
-                  <tr><td colSpan={4} className="text-center py-6 text-muted-foreground">No payments yet.</td></tr>
+                  <tr><td colSpan={5} className="text-center py-6 text-muted-foreground">No payments yet.</td></tr>
                 )}
-                {payments.map((p) => (
+                {payments.map((p, i) => (
                   <tr key={p.id} className="border-t border-border">
+                    <td className="px-3 py-2 text-muted-foreground">{payments.length - i}</td>
                     <td className="px-3 py-2">{new Date(p.paid_at).toLocaleDateString()}</td>
                     <td className="px-3 py-2 font-mono text-xs">{p.reference}</td>
                     <td className="px-3 py-2 text-right font-mono">{fmt(Number(p.amount))}</td>

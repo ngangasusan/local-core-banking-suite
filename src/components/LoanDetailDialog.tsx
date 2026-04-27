@@ -41,6 +41,7 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
   const activePayments = payments.filter((p) => !p.reversed);
   const paymentsCount = activePayments.length;
   const paidSum = activePayments.reduce((s, p) => s + Number(p.amount), 0);
+  const remainingToSettle = Math.max(total - paidSum, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -54,8 +55,9 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
           <Stat label={`Interest (day ${days})`} value={fmt(interest)} />
           <Stat label="Total payable" value={fmt(total)} highlight />
           <Stat label="Paid to date" value={fmt(paidSum)} />
-          <Stat label="Outstanding" value={fmt(Number(loan.outstanding_balance))} />
-          <Stat label="Payments made" value={String(paymentsCount)} highlight />
+          <Stat label="Remaining to settle" value={fmt(remainingToSettle)} highlight />
+          <Stat label="Principal outstanding" value={fmt(Number(loan.outstanding_balance))} />
+          <Stat label="Payments made" value={String(paymentsCount)} />
           {mpesa > 0 && <Stat label="M-Pesa charge (≤5d)" value={fmt(mpesa)} />}
           <Stat label="Disbursed" value={loan.disbursement_date ?? "—"} />
           <Stat label="Due date" value={loan.due_date ?? "—"} />

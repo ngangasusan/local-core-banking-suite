@@ -2,6 +2,8 @@
 // Keep these in sync.
 
 export function mpesaSendCharge(amount: number): number {
+  // No M-Pesa transaction fee added to loans above 10,000.
+  if (amount > 10000) return 0;
   if (amount <= 100) return 0;
   if (amount <= 500) return 7;
   if (amount <= 1000) return 13;
@@ -10,10 +12,7 @@ export function mpesaSendCharge(amount: number): number {
   if (amount <= 3500) return 53;
   if (amount <= 5000) return 57;
   if (amount <= 7500) return 78;
-  if (amount <= 10000) return 90;
-  if (amount <= 15000) return 100;
-  if (amount <= 20000) return 105;
-  return 108; // 20001 – 250000
+  return 90; // up to 10,000
 }
 
 /** Days between two dates (calendar-day rounded, min 0). */

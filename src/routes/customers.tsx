@@ -72,15 +72,18 @@ function CustomersPage() {
       const idFile = form.get("id_document") as File | null;
       if (!idFile || idFile.size === 0) throw new Error("ID document upload is required");
 
-      // Pre-check duplicates for friendly messaging
+      // Pre-check duplicates for friendly messaging (national_id and phone are unique)
+      const orParts = [`national_id.eq.${parsed.national_id}`];
+      if (parsed.phone) orParts.push(`phone.eq.${parsed.phone}`);
       const { data: existing } = await supabase
         .from("customers")
         .select("id, full_name, customer_number, national_id, phone")
-        .or(`national_id.eq.${parsed.national_id}${parsed.phone ? `,phone.eq.${parsed.phone}` : ""}`)
+        .or(orParts.join(","))
         .limit(1);
       if (existing && existing.length > 0) {
         const e = existing[0];
-        throw new Error(`Customer already exists: ${e.full_name} (${e.customer_number}) — ID/phone matches.`);
+        const which = e.national_id === parsed.national_id ? `National ID ${parsed.national_id}` : `phone ${parsed.phone}`;
+        throw new Error(`User exists: ${which} is already registered to ${e.full_name} (${e.customer_number}).`);
       }
 
       const customer_number = "C" + Date.now().toString().slice(-9);
@@ -99,7 +102,7 @@ function CustomersPage() {
         created_by: user!.id,
       }).select("id").single();
       if (error) {
-        if (error.code === "23505") throw new Error("Customer with this National ID or phone already exists.");
+        if (error.code === "23505") throw new Error("User exists: this National ID or phone number is already registered.");
         throw error;
       }
 

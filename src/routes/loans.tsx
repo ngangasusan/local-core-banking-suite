@@ -28,6 +28,7 @@ function LoansPage() {
   const [open, setOpen] = useState(false);
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [detailLoan, setDetailLoan] = useState<any | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
 
@@ -49,8 +50,24 @@ function LoansPage() {
     queryKey: ["customers-min"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("customers").select("id, full_name, customer_number").eq("is_active", true).order("full_name");
+      const { data } = await supabase.from("customers").select("id, full_name, customer_number, credit_score").eq("is_active", true).order("full_name");
       return data ?? [];
+    },
+  });
+
+  const { data: applicantInfo } = useQuery({
+    queryKey: ["applicant-info", selectedCustomer],
+    enabled: !!selectedCustomer,
+    queryFn: async () => {
+      const [{ data: cust }, { data: qualified }] = await Promise.all([
+        supabase.from("customers").select("credit_score, monthly_income").eq("id", selectedCustomer).maybeSingle(),
+        supabase.rpc("qualified_loan_amount", { _customer_id: selectedCustomer }),
+      ]);
+      return {
+        credit_score: cust?.credit_score ?? 650,
+        monthly_income: cust?.monthly_income ?? null,
+        qualified: Number(qualified ?? 0),
+      };
     },
   });
 
@@ -139,20 +156,45 @@ function LoansPage() {
           title="Loans"
           description="Lifecycle: Draft → Pending → Approved → Disbursed → Active → Closed."
           actions={canCreate && (
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSelectedCustomer(""); }}>
               <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />New loan</Button></DialogTrigger>
               <DialogContent className="max-w-xl">
                 <DialogHeader><DialogTitle>Loan application (saved as draft)</DialogTitle></DialogHeader>
                 <form className="grid grid-cols-2 gap-4" onSubmit={(e) => { e.preventDefault(); createMut.mutate(new FormData(e.currentTarget)); }}>
                   <div className="col-span-2 space-y-2">
                     <Label>Customer</Label>
-                    <Select name="customer_id" required>
+                    <Select name="customer_id" required value={selectedCustomer} onValueChange={setSelectedCustomer}>
                       <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
                       <SelectContent>
-                        {customers.map((c) => (<SelectItem key={c.id} value={c.id}>{c.full_name} ({c.customer_number})</SelectItem>))}
+                        {customers.map((c) => (<SelectItem key={c.id} value={c.id}>{c.full_name} ({c.customer_number}) — score {c.credit_score ?? 650}</SelectItem>))}
                       </SelectContent>
                     </Select>
                   </div>
+                  {selectedCustomer && applicantInfo && (
+                    <div className="col-span-2 grid grid-cols-3 gap-2 text-xs rounded-lg border border-border bg-muted/30 p-3">
+                      <div>
+                        <div className="text-muted-foreground">Credit score</div>
+                        <div className="font-mono font-semibold text-sm">
+                          {applicantInfo.credit_score}
+                          <span className={"ml-2 text-[10px] px-1.5 py-0.5 rounded " +
+                            (applicantInfo.credit_score >= 720 ? "bg-success/15 text-success"
+                              : applicantInfo.credit_score >= 600 ? "bg-primary-soft text-primary"
+                              : applicantInfo.credit_score >= 500 ? "bg-warning/15 text-warning-foreground"
+                              : "bg-destructive/15 text-destructive")}>
+                            {applicantInfo.credit_score >= 720 ? "Excellent" : applicantInfo.credit_score >= 600 ? "Good" : applicantInfo.credit_score >= 500 ? "Fair" : "Poor"}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Monthly income</div>
+                        <div className="font-mono font-semibold text-sm">{applicantInfo.monthly_income ? fmt(Number(applicantInfo.monthly_income)) : "—"}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Qualifies for up to</div>
+                        <div className="font-mono font-semibold text-sm text-primary">{fmt(applicantInfo.qualified)}</div>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2"><Label>Principal (KES)</Label><Input name="principal" type="number" step="0.01" required /></div>
                   <div className="space-y-2"><Label>Term (months)</Label><Input name="term_months" type="number" required defaultValue={12} /></div>
                   <div className="space-y-2"><Label>Interest rate (%)</Label><Input name="interest_rate" type="number" step="0.01" required defaultValue={14} /></div>

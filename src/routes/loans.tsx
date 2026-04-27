@@ -28,6 +28,7 @@ function LoansPage() {
   const [open, setOpen] = useState(false);
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [detailLoan, setDetailLoan] = useState<any | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
 
@@ -49,8 +50,24 @@ function LoansPage() {
     queryKey: ["customers-min"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("customers").select("id, full_name, customer_number").eq("is_active", true).order("full_name");
+      const { data } = await supabase.from("customers").select("id, full_name, customer_number, credit_score").eq("is_active", true).order("full_name");
       return data ?? [];
+    },
+  });
+
+  const { data: applicantInfo } = useQuery({
+    queryKey: ["applicant-info", selectedCustomer],
+    enabled: !!selectedCustomer,
+    queryFn: async () => {
+      const [{ data: cust }, { data: qualified }] = await Promise.all([
+        supabase.from("customers").select("credit_score, monthly_income").eq("id", selectedCustomer).maybeSingle(),
+        supabase.rpc("qualified_loan_amount", { _customer_id: selectedCustomer }),
+      ]);
+      return {
+        credit_score: cust?.credit_score ?? 650,
+        monthly_income: cust?.monthly_income ?? null,
+        qualified: Number(qualified ?? 0),
+      };
     },
   });
 

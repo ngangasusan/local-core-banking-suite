@@ -113,6 +113,42 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
         </p>
 
         <section className="mt-5">
+          <h3 className="text-sm font-medium mb-2">Customer ID document{idDocs.length > 1 ? "s" : ""} ({idDocs.length})</h3>
+          {idDocs.length === 0 ? (
+            <div className="text-xs text-muted-foreground border border-dashed border-border rounded-lg p-4 text-center">
+              No ID document on file.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {idDocs.map((d) => {
+                const url = idUrls[d.id];
+                const isPdf = d.storage_path.toLowerCase().endsWith(".pdf");
+                return (
+                  <a
+                    key={d.id}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block border border-border rounded-lg overflow-hidden bg-muted/30 hover:border-primary transition-colors"
+                  >
+                    {url && !isPdf ? (
+                      <img src={url} alt={`${customer.full_name} — ${d.doc_type}`} className="w-full h-40 object-cover" />
+                    ) : (
+                      <div className="w-full h-40 flex items-center justify-center bg-muted">
+                        <FileText className="h-10 w-10 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="p-2 text-xs">
+                      <div className="font-medium truncate">{d.doc_type}</div>
+                      <div className="text-muted-foreground">{new Date(d.uploaded_at).toLocaleDateString()}</div>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+        </section>
+        <section className="mt-5">
           <h3 className="text-sm font-medium mb-2">Accounts ({accounts.length})</h3>
           <div className="border border-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">

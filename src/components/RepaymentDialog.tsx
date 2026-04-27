@@ -26,17 +26,21 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
 
   const days = loanDaysElapsed(loan.disbursement_date);
   const accruedInterest = computeInterest(loan.principal, days);
+  const { total: totalDue } = computeTotalDue(loan.principal, days);
+  // remaining = total payable - (principal already paid down) = totalDue - (principal - outstanding)
+  const principalPaid = loan.principal - loan.outstanding;
+  const remainingToSettle = Math.max(totalDue - principalPaid, 0);
   const numAmount = Number(amount) || 0;
-  // Detect "interest-only" payment: within 5% of accrued interest and clearly less than full outstanding.
+  // Detect "interest-only" payment: within 5% of accrued interest and clearly less than full remaining.
   const isInterestOnly =
     numAmount > 0 &&
     Math.abs(numAmount - accruedInterest) / accruedInterest <= 0.05 &&
-    numAmount < loan.outstanding * 0.5;
+    numAmount < remainingToSettle * 0.5;
 
   const post = useMutation({
     mutationFn: async ({ rollover }: { rollover: boolean }) => {
       if (numAmount <= 0) throw new Error("Amount must be positive");
-      if (numAmount > loan.outstanding) throw new Error("Amount exceeds outstanding balance");
+      if (numAmount > remainingToSettle + 0.01) throw new Error("Amount exceeds total payable");
       const reference = "RP" + Date.now().toString().slice(-9);
       const { error: rerr } = await supabase.from("loan_repayments").insert({
         loan_id: loan.id, amount: numAmount, reference, posted_by: user!.id,
@@ -103,12 +107,13 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
         <DialogHeader><DialogTitle>Post repayment — {loan.loan_number}</DialogTitle></DialogHeader>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); post.mutate({ rollover: false }); }}>
           <div className="text-xs space-y-1 text-muted-foreground">
-            <div>Outstanding: <span className="font-mono">{loan.outstanding.toLocaleString()}</span></div>
+            <div>Principal outstanding: <span className="font-mono">{loan.outstanding.toLocaleString()}</span></div>
             <div>Accrued interest (day {days}): <span className="font-mono">{accruedInterest.toLocaleString()}</span></div>
+            <div className="text-foreground font-medium">Remaining to settle: <span className="font-mono">{remainingToSettle.toLocaleString()}</span></div>
           </div>
           <div className="space-y-2">
             <Label>Amount (KES)</Label>
-            <Input name="amount" type="number" step="0.01" required max={loan.outstanding} value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <Input name="amount" type="number" step="0.01" required max={remainingToSettle} value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
           {isInterestOnly && (
             <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs">

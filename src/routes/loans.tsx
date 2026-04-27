@@ -156,7 +156,7 @@ function LoansPage() {
           title="Loans"
           description="Lifecycle: Draft → Pending → Approved → Disbursed → Active → Closed."
           actions={canCreate && (
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSelectedCustomer(""); }}>
               <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />New loan</Button></DialogTrigger>
               <DialogContent className="max-w-xl">
                 <DialogHeader><DialogTitle>Loan application (saved as draft)</DialogTitle></DialogHeader>

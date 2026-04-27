@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { FileText } from "lucide-react";
 
 type CustomerLite = {
   id: string;
@@ -54,6 +56,35 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
       return Number(data ?? 0);
     },
   });
+
+  const { data: idDocs = [] } = useQuery({
+    queryKey: ["customer-id-docs", customer?.id],
+    enabled: !!customer?.id && open,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("kyc_documents")
+        .select("id, doc_type, storage_path, uploaded_at")
+        .eq("customer_id", customer!.id)
+        .eq("is_id_document", true)
+        .order("uploaded_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const [idUrls, setIdUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!open || idDocs.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const out: Record<string, string> = {};
+      for (const d of idDocs) {
+        const { data } = await supabase.storage.from("kyc-documents").createSignedUrl(d.storage_path, 600);
+        if (data?.signedUrl) out[d.id] = data.signedUrl;
+      }
+      if (!cancelled) setIdUrls(out);
+    })();
+    return () => { cancelled = true; };
+  }, [open, idDocs]);
 
   if (!customer) return null;
   const totalBalance = accounts.reduce((s, a) => s + Number(a.balance), 0);

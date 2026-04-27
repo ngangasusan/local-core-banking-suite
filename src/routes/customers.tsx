@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { KycUpload } from "@/components/KycUpload";
+import { CustomerDetailDialog } from "@/components/CustomerDetailDialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/customers")({
@@ -46,6 +47,7 @@ function CustomersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -233,7 +235,7 @@ function CustomersPage() {
                   <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No customers yet. Create your first one.</td></tr>
                 )}
                 {customers.map((c) => (
-                  <tr key={c.id} className="border-t border-border hover:bg-muted/30">
+                  <tr key={c.id} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDetailCustomer(c)}>
                     <td className="px-4 py-3 font-mono text-xs">{c.customer_number}</td>
                     <td className="px-4 py-3 font-medium">{c.full_name}</td>
                     <td className="px-4 py-3 font-mono text-xs">{c.national_id || "—"}</td>
@@ -241,7 +243,7 @@ function CustomersPage() {
                     <td className="px-4 py-3 text-muted-foreground">{c.phone || "—"}</td>
                     <td className="px-4 py-3"><KycBadge status={c.kyc_status} /></td>
                     <td className="px-4 py-3"><CreditScoreBadge score={c.credit_score ?? 650} /></td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex gap-1">
                         <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "verified" })}>Verify</Button>
                         <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "rejected" })}>Reject</Button>
@@ -255,6 +257,8 @@ function CustomersPage() {
           </div>
         </div>
       </div>
+
+      <CustomerDetailDialog customer={detailCustomer} open={!!detailCustomer} onOpenChange={(o) => !o && setDetailCustomer(null)} />
     </AppShell>
   );
 }

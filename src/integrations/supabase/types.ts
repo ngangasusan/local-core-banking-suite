@@ -404,11 +404,14 @@ export type Database = {
           interest_rate: number
           loan_number: string
           method: Database["public"]["Enums"]["loan_method"]
+          mpesa_charge: number
           next_payment_date: string | null
           outstanding_balance: number
           principal: number
+          projected_payment_date: string | null
           purpose: string | null
           rejection_reason: string | null
+          rollover_of: string | null
           status: Database["public"]["Enums"]["loan_status"]
           submitted_for_approval_at: string | null
           term_months: number
@@ -427,11 +430,14 @@ export type Database = {
           interest_rate: number
           loan_number: string
           method?: Database["public"]["Enums"]["loan_method"]
+          mpesa_charge?: number
           next_payment_date?: string | null
           outstanding_balance?: number
           principal: number
+          projected_payment_date?: string | null
           purpose?: string | null
           rejection_reason?: string | null
+          rollover_of?: string | null
           status?: Database["public"]["Enums"]["loan_status"]
           submitted_for_approval_at?: string | null
           term_months: number
@@ -450,11 +456,14 @@ export type Database = {
           interest_rate?: number
           loan_number?: string
           method?: Database["public"]["Enums"]["loan_method"]
+          mpesa_charge?: number
           next_payment_date?: string | null
           outstanding_balance?: number
           principal?: number
+          projected_payment_date?: string | null
           purpose?: string | null
           rejection_reason?: string | null
+          rollover_of?: string | null
           status?: Database["public"]["Enums"]["loan_status"]
           submitted_for_approval_at?: string | null
           term_months?: number
@@ -473,6 +482,20 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_rollover_of_fkey"
+            columns: ["rollover_of"]
+            isOneToOne: false
+            referencedRelation: "loan_portfolio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_rollover_of_fkey"
+            columns: ["rollover_of"]
+            isOneToOne: false
+            referencedRelation: "loans"
             referencedColumns: ["id"]
           },
         ]
@@ -798,6 +821,14 @@ export type Database = {
       }
     }
     Functions: {
+      compute_loan_interest: {
+        Args: { _days: number; _principal: number }
+        Returns: number
+      }
+      compute_loan_total_due: {
+        Args: { _days: number; _principal: number }
+        Returns: number
+      }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: { _permission: string; _user_id: string }
@@ -811,6 +842,8 @@ export type Database = {
         Returns: boolean
       }
       mark_overdue_loans: { Args: never; Returns: undefined }
+      mpesa_send_charge: { Args: { _amount: number }; Returns: number }
+      qualified_loan_amount: { Args: { _customer_id: string }; Returns: number }
       recompute_credit_score: {
         Args: { _customer_id: string }
         Returns: number

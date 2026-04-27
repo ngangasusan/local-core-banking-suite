@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { computeInterest, loanDaysElapsed } from "@/lib/loan-calc";
+import { computeInterest, computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 import { toast } from "sonner";
 
 type LoanForRepayment = {

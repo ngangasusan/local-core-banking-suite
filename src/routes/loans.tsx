@@ -67,6 +67,7 @@ function LoansPage() {
         term_months: Number(d.term_months),
         method: d.method as "flat" | "reducing_balance" | "amortized",
         purpose: d.purpose || null,
+        projected_payment_date: d.projected_payment_date || null,
         outstanding_balance: principal,
         status: "draft",
         created_by: user!.id,
@@ -166,6 +167,8 @@ function LoansPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2"><Label>Projected payment date</Label><Input name="projected_payment_date" type="date" /></div>
+                  <div className="space-y-2"><Label>&nbsp;</Label><div className="text-xs text-muted-foreground">Officer's expected repayment date.</div></div>
                   <div className="col-span-2 space-y-2"><Label>Purpose</Label><Textarea name="purpose" rows={2} /></div>
                   <DialogFooter className="col-span-2">
                     <Button type="submit" disabled={createMut.isPending}>{createMut.isPending ? "Saving…" : "Save draft"}</Button>
@@ -221,7 +224,14 @@ function LoansPage() {
                           <Button size="sm" variant="default" onClick={() => disburse.mutate(l.id)}>Disburse</Button>
                         )}
                         {(l.status === "active" || l.status === "in_arrears") && Number(l.outstanding_balance) > 0 && (
-                          <RepaymentDialog loanId={l.id} loanNumber={l.loan_number} outstanding={Number(l.outstanding_balance)} />
+                          <RepaymentDialog loan={{
+                            id: l.id,
+                            loan_number: l.loan_number,
+                            outstanding: Number(l.outstanding_balance),
+                            principal: Number(l.principal),
+                            customer_id: l.customer_id,
+                            disbursement_date: l.disbursement_date,
+                          }} />
                         )}
                       </div>
                     </td>

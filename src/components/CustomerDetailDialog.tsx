@@ -1,0 +1,151 @@
+import { useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+
+type CustomerLite = {
+  id: string;
+  full_name: string;
+  customer_number: string;
+  phone: string | null;
+  email: string | null;
+  national_id: string | null;
+  monthly_income: number | string | null;
+  credit_score: number | null;
+  kyc_status: string;
+};
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(n);
+}
+
+export function CustomerDetailDialog({ customer, open, onOpenChange }: { customer: CustomerLite | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["customer-accounts", customer?.id],
+    enabled: !!customer?.id && open,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("accounts")
+        .select("id, account_number, account_type, balance, status, currency")
+        .eq("customer_id", customer!.id)
+        .order("created_at");
+      return data ?? [];
+    },
+  });
+
+  const { data: loans = [] } = useQuery({
+    queryKey: ["customer-loans", customer?.id],
+    enabled: !!customer?.id && open,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("loans")
+        .select("id, loan_number, principal, outstanding_balance, status, disbursement_date, due_date")
+        .eq("customer_id", customer!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const { data: qualified } = useQuery({
+    queryKey: ["customer-qualified", customer?.id],
+    enabled: !!customer?.id && open,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("qualified_loan_amount", { _customer_id: customer!.id });
+      if (error) throw error;
+      return Number(data ?? 0);
+    },
+  });
+
+  if (!customer) return null;
+  const totalBalance = accounts.reduce((s, a) => s + Number(a.balance), 0);
+  const activeLoans = loans.filter((l) => ["active", "in_arrears", "disbursed"].includes(l.status));
+  const totalOutstanding = activeLoans.reduce((s, l) => s + Number(l.outstanding_balance), 0);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{customer.full_name} <span className="text-muted-foreground font-mono text-sm">({customer.customer_number})</span></DialogTitle>
+        </DialogHeader>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+          <Stat label="Phone" value={customer.phone ?? "—"} />
+          <Stat label="National ID" value={customer.national_id ?? "—"} />
+          <Stat label="KYC" value={customer.kyc_status} />
+          <Stat label="Credit score" value={String(customer.credit_score ?? 650)} />
+          <Stat label="Monthly income" value={customer.monthly_income ? fmt(Number(customer.monthly_income)) : "—"} />
+          <Stat label="Total balance" value={fmt(totalBalance)} />
+          <Stat label="Outstanding loans" value={fmt(totalOutstanding)} />
+          <Stat label="Loan qualification" value={qualified != null ? fmt(qualified) : "…"} highlight />
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Qualification factors in income, account balance, credit score and current outstanding loans.
+        </p>
+
+        <section className="mt-5">
+          <h3 className="text-sm font-medium mb-2">Accounts ({accounts.length})</h3>
+          <div className="border border-border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2 font-medium">Account #</th>
+                  <th className="text-left px-3 py-2 font-medium">Type</th>
+                  <th className="text-left px-3 py-2 font-medium">Status</th>
+                  <th className="text-right px-3 py-2 font-medium">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.length === 0 && <tr><td colSpan={4} className="text-center py-4 text-muted-foreground">No accounts.</td></tr>}
+                {accounts.map((a) => (
+                  <tr key={a.id} className="border-t border-border">
+                    <td className="px-3 py-2 font-mono text-xs">{a.account_number}</td>
+                    <td className="px-3 py-2 capitalize">{a.account_type}</td>
+                    <td className="px-3 py-2 capitalize">{a.status}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(Number(a.balance))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-5">
+          <h3 className="text-sm font-medium mb-2">Loans ({loans.length})</h3>
+          <div className="border border-border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2 font-medium">Loan #</th>
+                  <th className="text-right px-3 py-2 font-medium">Principal</th>
+                  <th className="text-right px-3 py-2 font-medium">Outstanding</th>
+                  <th className="text-left px-3 py-2 font-medium">Status</th>
+                  <th className="text-left px-3 py-2 font-medium">Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loans.length === 0 && <tr><td colSpan={5} className="text-center py-4 text-muted-foreground">No loans.</td></tr>}
+                {loans.map((l) => (
+                  <tr key={l.id} className="border-t border-border">
+                    <td className="px-3 py-2 font-mono text-xs">{l.loan_number}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(Number(l.principal))}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(Number(l.outstanding_balance))}</td>
+                    <td className="px-3 py-2 capitalize">{l.status.replace("_", " ")}</td>
+                    <td className="px-3 py-2 text-xs">{l.due_date ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={"rounded-lg border border-border p-3 " + (highlight ? "bg-primary-soft" : "bg-card")}>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={"font-mono text-sm " + (highlight ? "text-primary font-semibold" : "")}>{value}</div>
+    </div>
+  );
+}

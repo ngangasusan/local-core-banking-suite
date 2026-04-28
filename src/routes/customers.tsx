@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, ShieldCheck, ShieldAlert, ShieldQuestion, Pencil } from "lucide-react";
+import { Plus, Search, ShieldCheck, ShieldAlert, ShieldQuestion, Pencil, MoreHorizontal, Eye, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +44,7 @@ const customerSchema = z.object({
 });
 
 function CustomersPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -138,6 +140,20 @@ function CustomersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteCustomer = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("customers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Customer deleted");
+      qc.invalidateQueries({ queryKey: ["customers"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const canDelete = hasRole("admin") || hasRole("super_admin");
+
   if (loading || !user) return null;
 
   return (
@@ -153,7 +169,7 @@ function CustomersPage() {
                   <Plus className="h-4 w-4 mr-2" /> New customer
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create customer</DialogTitle>
                 </DialogHeader>
@@ -247,11 +263,13 @@ function CustomersPage() {
                     <td className="px-4 py-3"><KycBadge status={c.kyc_status} /></td>
                     <td className="px-4 py-3"><CreditScoreBadge score={c.credit_score ?? 650} /></td>
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="inline-flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "verified" })}>Verify</Button>
-                        <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "rejected" })}>Reject</Button>
-                        <CustomerEditDialog customer={c} />
-                      </div>
+                      <RowActions
+                        customer={c}
+                        onView={() => setDetailCustomer(c)}
+                        onVerify={() => updateKyc.mutate({ id: c.id, status: "verified" })}
+                        onReject={() => updateKyc.mutate({ id: c.id, status: "rejected" })}
+                        onDelete={canDelete ? () => deleteCustomer.mutate(c.id) : undefined}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -289,8 +307,7 @@ function CreditScoreBadge({ score }: { score: number }) {
 
 type CustomerRow = { id: string; full_name: string; phone: string | null; email: string | null; address: string | null; city: string | null; occupation: string | null; national_id: string | null };
 
-function CustomerEditDialog({ customer }: { customer: CustomerRow }) {
-  const [open, setOpen] = useState(false);
+function CustomerEditDialog({ customer, open, onOpenChange }: { customer: CustomerRow; open: boolean; onOpenChange: (o: boolean) => void }) {
   const qc = useQueryClient();
   const update = useMutation({
     mutationFn: async (fd: FormData) => {
@@ -302,13 +319,12 @@ function CustomerEditDialog({ customer }: { customer: CustomerRow }) {
       }).eq("id", customer.id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Customer updated"); qc.invalidateQueries({ queryKey: ["customers"] }); },
+    onSuccess: () => { toast.success("Customer updated"); qc.invalidateQueries({ queryKey: ["customers"] }); onOpenChange(false); },
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button size="sm" variant="ghost"><Pencil className="h-3.5 w-3.5" /></Button></DialogTrigger>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Edit customer — {customer.full_name}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); update.mutate(new FormData(e.currentTarget)); }}>
@@ -328,5 +344,58 @@ function CustomerEditDialog({ customer }: { customer: CustomerRow }) {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RowActions({ customer, onView, onVerify, onReject, onDelete }: {
+  customer: CustomerRow & { kyc_status?: string };
+  onView: () => void;
+  onVerify: () => void;
+  onReject: () => void;
+  onDelete?: () => void;
+}) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={onView}><Eye className="h-4 w-4 mr-2" />View details</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEditOpen(true)}><Pencil className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onVerify}><CheckCircle2 className="h-4 w-4 mr-2" />Verify KYC</DropdownMenuItem>
+          <DropdownMenuItem onClick={onReject}><XCircle className="h-4 w-4 mr-2" />Reject KYC</DropdownMenuItem>
+          {onDelete && <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setConfirmDelete(true)}>
+              <Trash2 className="h-4 w-4 mr-2" />Delete
+            </DropdownMenuItem>
+          </>}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <CustomerEditDialog customer={customer} open={editOpen} onOpenChange={setEditOpen} />
+      {onDelete && (
+        <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {customer.full_name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently removes the customer record. Accounts, loans and KYC documents that reference this customer may block the delete if present.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </>
   );
 }

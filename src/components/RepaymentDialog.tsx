@@ -16,6 +16,7 @@ type LoanForRepayment = {
   principal: number;
   customer_id: string;
   disbursement_date: string | null;
+  due_date?: string | null;
 };
 
 export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
@@ -26,7 +27,7 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
 
   const days = loanDaysElapsed(loan.disbursement_date);
   const accruedInterest = computeInterest(loan.principal, days);
-  const { total: totalDue } = computeTotalDue(loan.principal, days);
+  const { total: totalDue, lateFee } = computeTotalDue(loan.principal, days, loan.due_date ?? null);
   // remaining = total payable - (principal already paid down) = totalDue - (principal - outstanding)
   const principalPaid = loan.principal - loan.outstanding;
   const remainingToSettle = Math.max(totalDue - principalPaid, 0);
@@ -109,6 +110,7 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
           <div className="text-xs space-y-1 text-muted-foreground">
             <div>Principal outstanding: <span className="font-mono">{loan.outstanding.toLocaleString()}</span></div>
             <div>Accrued interest (day {days}): <span className="font-mono">{accruedInterest.toLocaleString()}</span></div>
+            {lateFee > 0 && <div className="text-destructive">Late penalty fees: <span className="font-mono">{lateFee.toLocaleString()}</span></div>}
             <div className="text-foreground font-medium">Remaining to settle: <span className="font-mono">{remainingToSettle.toLocaleString()}</span></div>
           </div>
           <div className="space-y-2">

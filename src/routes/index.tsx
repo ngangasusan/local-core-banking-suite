@@ -104,7 +104,10 @@ function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6">
-            <h3 className="font-semibold mb-1">Portfolio at a glance</h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold">Portfolio at a glance</h3>
+              <Link to="/arrears" className="text-xs text-primary hover:underline">PAR breakdown →</Link>
+            </div>
             <p className="text-sm text-muted-foreground mb-6">Quick metrics on your active book.</p>
             <div className="grid grid-cols-2 gap-6">
               <Metric icon={TrendingUp} label="Transactions today" value={String(stats?.txnCount ?? 0)} tone="success" />

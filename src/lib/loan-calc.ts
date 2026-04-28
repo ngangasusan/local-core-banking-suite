@@ -36,11 +36,42 @@ export function computeInterest(principal: number, days: number): number {
   return accrued;
 }
 
-/** Total amount client must pay. M-Pesa send charge added if paid within 5 days. */
-export function computeTotalDue(principal: number, days: number): { interest: number; mpesa: number; total: number } {
+/** Late penalty fee: 1% of principal per day past due, capped at 50% of principal. */
+export function computeLateFee(principal: number, daysPastDue: number): number {
+  if (daysPastDue <= 0 || principal <= 0) return 0;
+  return Math.min(principal * 0.5, principal * 0.01 * daysPastDue);
+}
+
+/** Days past due_date (0 if not yet due or no due date). */
+export function daysPastDue(dueDate: string | null): number {
+  if (!dueDate) return 0;
+  const due = new Date(dueDate).getTime();
+  const today = Date.now();
+  const diff = Math.floor((today - due) / 86_400_000);
+  return diff > 0 ? diff : 0;
+}
+
+/** Total amount client must pay. M-Pesa send charge added if paid within 5 days; late fee added if past due. */
+export function computeTotalDue(
+  principal: number,
+  days: number,
+  dueDate: string | null = null,
+): { interest: number; mpesa: number; lateFee: number; total: number } {
   const interest = computeInterest(principal, days);
   const mpesa = days <= 5 ? mpesaSendCharge(principal) : 0;
-  return { interest, mpesa, total: principal + interest + mpesa };
+  const lateFee = computeLateFee(principal, daysPastDue(dueDate));
+  return { interest, mpesa, lateFee, total: principal + interest + mpesa + lateFee };
+}
+
+/** Aging bucket label for an outstanding loan. */
+export function agingBucket(dueDate: string | null, outstanding: number): "current" | "par_1_30" | "par_31_60" | "par_61_90" | "par_90_plus" {
+  if (!dueDate || outstanding <= 0) return "current";
+  const dpd = daysPastDue(dueDate);
+  if (dpd === 0) return "current";
+  if (dpd <= 30) return "par_1_30";
+  if (dpd <= 60) return "par_31_60";
+  if (dpd <= 90) return "par_61_90";
+  return "par_90_plus";
 }
 
 /** Days elapsed since disbursement (for an active loan). */

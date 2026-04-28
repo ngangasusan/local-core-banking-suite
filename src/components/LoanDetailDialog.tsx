@@ -12,6 +12,7 @@ type LoanLite = {
   due_date: string | null;
   disbursement_date: string | null;
   projected_payment_date?: string | null;
+  late_fees?: number | string | null;
   customer?: { full_name: string; customer_number: string } | null;
 };
 
@@ -37,7 +38,7 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
   if (!loan) return null;
   const principal = Number(loan.principal);
   const days = loanDaysElapsed(loan.disbursement_date);
-  const { interest, mpesa, total } = computeTotalDue(principal, days);
+  const { interest, mpesa, lateFee, total } = computeTotalDue(principal, days, loan.due_date);
   const activePayments = payments.filter((p) => !p.reversed);
   const paymentsCount = activePayments.length;
   const paidSum = activePayments.reduce((s, p) => s + Number(p.amount), 0);
@@ -53,6 +54,7 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
           <Stat label="Principal" value={fmt(principal)} />
           <Stat label={`Interest (day ${days})`} value={fmt(interest)} />
+          {lateFee > 0 && <Stat label="Late fees" value={fmt(lateFee)} tone="danger" />}
           <Stat label="Total payable" value={fmt(total)} highlight />
           <Stat label="Paid to date" value={fmt(paidSum)} />
           <Stat label="Remaining to settle" value={fmt(remainingToSettle)} highlight />
@@ -67,6 +69,7 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
         <p className="text-xs text-muted-foreground mt-2">
           Rule: minimum interest 10% of principal; daily 20 per 1,000 from day 1; capped at 30% after 14 days.
           {days <= 5 && " M-Pesa send charge included while still within 5 days."}
+          {lateFee > 0 && " Late penalty: 1% of principal per day past due (cap 50%)."}
         </p>
 
         <div className="mt-4">
@@ -108,11 +111,13 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
   );
 }
 
-function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Stat({ label, value, highlight, tone }: { label: string; value: string; highlight?: boolean; tone?: "danger" }) {
+  const bg = tone === "danger" ? "bg-destructive/10 border-destructive/30" : highlight ? "bg-primary-soft" : "bg-card";
+  const txt = tone === "danger" ? "text-destructive font-semibold" : highlight ? "text-primary font-semibold" : "";
   return (
-    <div className={"rounded-lg border border-border p-3 " + (highlight ? "bg-primary-soft" : "bg-card")}>
+    <div className={"rounded-lg border border-border p-3 " + bg}>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={"font-mono " + (highlight ? "text-primary font-semibold" : "")}>{value}</div>
+      <div className={"font-mono " + txt}>{value}</div>
     </div>
   );
 }

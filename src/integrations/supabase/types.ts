@@ -402,6 +402,7 @@ export type Database = {
           due_date: string | null
           id: string
           interest_rate: number
+          late_fees: number
           loan_number: string
           method: Database["public"]["Enums"]["loan_method"]
           mpesa_charge: number
@@ -428,6 +429,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           interest_rate: number
+          late_fees?: number
           loan_number: string
           method?: Database["public"]["Enums"]["loan_method"]
           mpesa_charge?: number
@@ -454,6 +456,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           interest_rate?: number
+          late_fees?: number
           loan_number?: string
           method?: Database["public"]["Enums"]["loan_method"]
           mpesa_charge?: number
@@ -821,6 +824,11 @@ export type Database = {
       }
     }
     Functions: {
+      accrue_late_fees_daily: { Args: never; Returns: undefined }
+      compute_late_fee: {
+        Args: { _days_past_due: number; _principal: number }
+        Returns: number
+      }
       compute_loan_interest: {
         Args: { _days: number; _principal: number }
         Returns: number
@@ -841,8 +849,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      loan_aging: {
+        Args: { _loan_id: string }
+        Returns: {
+          bucket: string
+          days_past_due: number
+        }[]
+      }
       mark_overdue_loans: { Args: never; Returns: undefined }
       mpesa_send_charge: { Args: { _amount: number }; Returns: number }
+      portfolio_par_summary: {
+        Args: never
+        Returns: {
+          bucket: string
+          loan_count: number
+          outstanding: number
+        }[]
+      }
       qualified_loan_amount: { Args: { _customer_id: string }; Returns: number }
       recompute_credit_score: {
         Args: { _customer_id: string }

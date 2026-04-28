@@ -34,6 +34,7 @@ const NAV: NavItem[] = [
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/loans", label: "Loans", icon: Banknote },
+  { to: "/arrears", label: "Arrears & PAR", icon: AlertTriangle },
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/ledger", label: "General Ledger", icon: BookOpen },
   { to: "/reports", label: "Reports", icon: FileBarChart },

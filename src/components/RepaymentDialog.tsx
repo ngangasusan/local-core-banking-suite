@@ -16,6 +16,7 @@ type LoanForRepayment = {
   principal: number;
   customer_id: string;
   disbursement_date: string | null;
+  due_date?: string | null;
 };
 
 export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {

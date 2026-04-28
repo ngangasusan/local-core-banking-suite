@@ -27,7 +27,7 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
 
   const days = loanDaysElapsed(loan.disbursement_date);
   const accruedInterest = computeInterest(loan.principal, days);
-  const { total: totalDue } = computeTotalDue(loan.principal, days);
+  const { total: totalDue, lateFee } = computeTotalDue(loan.principal, days, loan.due_date ?? null);
   // remaining = total payable - (principal already paid down) = totalDue - (principal - outstanding)
   const principalPaid = loan.principal - loan.outstanding;
   const remainingToSettle = Math.max(totalDue - principalPaid, 0);

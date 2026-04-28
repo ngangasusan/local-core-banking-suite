@@ -19,6 +19,7 @@ import { Route as LedgerRouteImport } from './routes/ledger'
 import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuditRouteImport } from './routes/audit'
+import { Route as ArrearsRouteImport } from './routes/arrears'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicHooksLoanRemindersRouteImport } from './routes/api/public/hooks/loan-reminders'
@@ -73,6 +74,11 @@ const AuditRoute = AuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArrearsRoute = ArrearsRouteImport.update({
+  id: '/arrears',
+  path: '/arrears',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountsRoute = AccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
@@ -93,6 +99,7 @@ const ApiPublicHooksLoanRemindersRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
+  '/arrears': typeof ArrearsRoute
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
   '/customers': typeof CustomersRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
+  '/arrears': typeof ArrearsRoute
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
   '/customers': typeof CustomersRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
+  '/arrears': typeof ArrearsRoute
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
   '/customers': typeof CustomersRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/accounts'
+    | '/arrears'
     | '/audit'
     | '/auth'
     | '/customers'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/accounts'
+    | '/arrears'
     | '/audit'
     | '/auth'
     | '/customers'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/accounts'
+    | '/arrears'
     | '/audit'
     | '/auth'
     | '/customers'
@@ -187,6 +199,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRoute: typeof AccountsRoute
+  ArrearsRoute: typeof ArrearsRoute
   AuditRoute: typeof AuditRoute
   AuthRoute: typeof AuthRoute
   CustomersRoute: typeof CustomersRoute
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/arrears': {
+      id: '/arrears'
+      path: '/arrears'
+      fullPath: '/arrears'
+      preLoaderRoute: typeof ArrearsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/accounts': {
       id: '/accounts'
       path: '/accounts'
@@ -299,6 +319,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRoute: AccountsRoute,
+  ArrearsRoute: ArrearsRoute,
   AuditRoute: AuditRoute,
   AuthRoute: AuthRoute,
   CustomersRoute: CustomersRoute,

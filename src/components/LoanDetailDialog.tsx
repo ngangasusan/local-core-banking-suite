@@ -111,11 +111,13 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
   );
 }
 
-function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Stat({ label, value, highlight, tone }: { label: string; value: string; highlight?: boolean; tone?: "danger" }) {
+  const bg = tone === "danger" ? "bg-destructive/10 border-destructive/30" : highlight ? "bg-primary-soft" : "bg-card";
+  const txt = tone === "danger" ? "text-destructive font-semibold" : highlight ? "text-primary font-semibold" : "";
   return (
-    <div className={"rounded-lg border border-border p-3 " + (highlight ? "bg-primary-soft" : "bg-card")}>
+    <div className={"rounded-lg border border-border p-3 " + bg}>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={"font-mono " + (highlight ? "text-primary font-semibold" : "")}>{value}</div>
+      <div className={"font-mono " + txt}>{value}</div>
     </div>
   );
 }

@@ -140,6 +140,20 @@ function CustomersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteCustomer = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("customers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Customer deleted");
+      qc.invalidateQueries({ queryKey: ["customers"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const canDelete = hasRole("admin") || hasRole("super_admin");
+
   if (loading || !user) return null;
 
   return (

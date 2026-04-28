@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RepaymentDialog } from "@/components/RepaymentDialog";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
+import { computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/loans")({
@@ -228,7 +229,7 @@ function LoansPage() {
                 <th className="text-left px-4 py-3 font-medium">Loan #</th>
                 <th className="text-left px-4 py-3 font-medium">Customer</th>
                 <th className="text-right px-4 py-3 font-medium">Principal</th>
-                <th className="text-right px-4 py-3 font-medium">Outstanding</th>
+                <th className="text-right px-4 py-3 font-medium">Total payable</th>
                 <th className="text-left px-4 py-3 font-medium">Due</th>
                 <th className="text-left px-4 py-3 font-medium">Status</th>
                 <th className="text-right px-4 py-3 font-medium">Actions</th>
@@ -238,13 +239,25 @@ function LoansPage() {
               {loans.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-muted-foreground">No loans yet.</td></tr>}
               {loans.map((l) => {
                 const isCreator = l.created_by === user.id;
+                const principal = Number(l.principal);
+                const outstanding = Number(l.outstanding_balance);
+                const isOpen = ["active", "in_arrears", "disbursed"].includes(l.status);
+                const days = isOpen ? loanDaysElapsed(l.disbursement_date) : 0;
+                const { total } = isOpen ? computeTotalDue(principal, days) : { total: principal };
+                // If loan already partially paid, remaining to settle = total - (principal - outstanding)
+                const paid = Math.max(principal - outstanding, 0);
+                const remaining = isOpen ? Math.max(total - paid, 0) : outstanding;
+                const isOverdue = l.status === "in_arrears" || (l.due_date && new Date(l.due_date) < new Date() && outstanding > 0 && l.status !== "closed");
                 return (
                   <tr key={l.id} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDetailLoan(l)}>
                     <td className="px-4 py-3 font-mono text-xs">{l.loan_number}</td>
                     <td className="px-4 py-3">{l.customer?.full_name ?? "—"}</td>
-                    <td className="px-4 py-3 text-right font-mono">{fmt(Number(l.principal))}</td>
-                    <td className="px-4 py-3 text-right font-mono">{fmt(Number(l.outstanding_balance))}</td>
-                    <td className="px-4 py-3 text-xs">{l.due_date ?? "—"}</td>
+                    <td className="px-4 py-3 text-right font-mono">{fmt(principal)}</td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      <div className="font-semibold">{fmt(remaining)}</div>
+                      {isOpen && <div className="text-[10px] text-muted-foreground">of {fmt(total)} · day {days}</div>}
+                    </td>
+                    <td className={"px-4 py-3 text-xs " + (isOverdue ? "text-destructive font-medium" : "")}>{l.due_date ?? "—"}{isOverdue && " ⚠"}</td>
                     <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex gap-1 flex-wrap justify-end">

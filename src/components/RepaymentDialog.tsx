@@ -110,6 +110,7 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
           <div className="text-xs space-y-1 text-muted-foreground">
             <div>Principal outstanding: <span className="font-mono">{loan.outstanding.toLocaleString()}</span></div>
             <div>Accrued interest (day {days}): <span className="font-mono">{accruedInterest.toLocaleString()}</span></div>
+            {lateFee > 0 && <div className="text-destructive">Late penalty fees: <span className="font-mono">{lateFee.toLocaleString()}</span></div>}
             <div className="text-foreground font-medium">Remaining to settle: <span className="font-mono">{remainingToSettle.toLocaleString()}</span></div>
           </div>
           <div className="space-y-2">

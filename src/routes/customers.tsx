@@ -263,11 +263,13 @@ function CustomersPage() {
                     <td className="px-4 py-3"><KycBadge status={c.kyc_status} /></td>
                     <td className="px-4 py-3"><CreditScoreBadge score={c.credit_score ?? 650} /></td>
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="inline-flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "verified" })}>Verify</Button>
-                        <Button size="sm" variant="ghost" onClick={() => updateKyc.mutate({ id: c.id, status: "rejected" })}>Reject</Button>
-                        <CustomerEditDialog customer={c} />
-                      </div>
+                      <RowActions
+                        customer={c}
+                        onView={() => setDetailCustomer(c)}
+                        onVerify={() => updateKyc.mutate({ id: c.id, status: "verified" })}
+                        onReject={() => updateKyc.mutate({ id: c.id, status: "rejected" })}
+                        onDelete={canDelete ? () => deleteCustomer.mutate(c.id) : undefined}
+                      />
                     </td>
                   </tr>
                 ))}

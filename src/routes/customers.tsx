@@ -44,7 +44,7 @@ const customerSchema = z.object({
 });
 
 function CustomersPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -155,7 +155,7 @@ function CustomersPage() {
                   <Plus className="h-4 w-4 mr-2" /> New customer
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create customer</DialogTitle>
                 </DialogHeader>

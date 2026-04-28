@@ -307,8 +307,7 @@ function CreditScoreBadge({ score }: { score: number }) {
 
 type CustomerRow = { id: string; full_name: string; phone: string | null; email: string | null; address: string | null; city: string | null; occupation: string | null; national_id: string | null };
 
-function CustomerEditDialog({ customer }: { customer: CustomerRow }) {
-  const [open, setOpen] = useState(false);
+function CustomerEditDialog({ customer, open, onOpenChange }: { customer: CustomerRow; open: boolean; onOpenChange: (o: boolean) => void }) {
   const qc = useQueryClient();
   const update = useMutation({
     mutationFn: async (fd: FormData) => {
@@ -320,13 +319,12 @@ function CustomerEditDialog({ customer }: { customer: CustomerRow }) {
       }).eq("id", customer.id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Customer updated"); qc.invalidateQueries({ queryKey: ["customers"] }); },
+    onSuccess: () => { toast.success("Customer updated"); qc.invalidateQueries({ queryKey: ["customers"] }); onOpenChange(false); },
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button size="sm" variant="ghost"><Pencil className="h-3.5 w-3.5" /></Button></DialogTrigger>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Edit customer — {customer.full_name}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); update.mutate(new FormData(e.currentTarget)); }}>
@@ -346,5 +344,58 @@ function CustomerEditDialog({ customer }: { customer: CustomerRow }) {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RowActions({ customer, onView, onVerify, onReject, onDelete }: {
+  customer: CustomerRow & { kyc_status?: string };
+  onView: () => void;
+  onVerify: () => void;
+  onReject: () => void;
+  onDelete?: () => void;
+}) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={onView}><Eye className="h-4 w-4 mr-2" />View details</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEditOpen(true)}><Pencil className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onVerify}><CheckCircle2 className="h-4 w-4 mr-2" />Verify KYC</DropdownMenuItem>
+          <DropdownMenuItem onClick={onReject}><XCircle className="h-4 w-4 mr-2" />Reject KYC</DropdownMenuItem>
+          {onDelete && <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setConfirmDelete(true)}>
+              <Trash2 className="h-4 w-4 mr-2" />Delete
+            </DropdownMenuItem>
+          </>}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <CustomerEditDialog customer={customer} open={editOpen} onOpenChange={setEditOpen} />
+      {onDelete && (
+        <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {customer.full_name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently removes the customer record. Accounts, loans and KYC documents that reference this customer may block the delete if present.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </>
   );
 }

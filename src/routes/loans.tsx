@@ -222,7 +222,9 @@ function LoansPage() {
           )}
         />
 
-        <div className="bg-card border border-border rounded-xl overflow-x-auto">
+        <LoanStats loans={loans} />
+
+        <div className="bg-card border border-border rounded-xl overflow-x-auto mt-4">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
               <tr>
@@ -329,4 +331,30 @@ function LoanStatusBadge({ status }: { status: string }) {
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(n);
+}
+
+function LoanStats({ loans }: { loans: any[] }) {
+  const active = loans.filter((l) => ["active", "in_arrears", "disbursed"].includes(l.status));
+  const overdue = loans.filter((l) => l.status === "in_arrears" || (l.due_date && new Date(l.due_date) < new Date() && Number(l.outstanding_balance) > 0 && l.status !== "closed"));
+  const pending = loans.filter((l) => l.status === "pending");
+  const portfolio = active.reduce((s, l) => s + Number(l.outstanding_balance), 0);
+  const overdueAmt = overdue.reduce((s, l) => s + Number(l.outstanding_balance), 0);
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <Stat label="Active loans" value={String(active.length)} sub={fmt(portfolio) + " outstanding"} />
+      <Stat label="Pending approval" value={String(pending.length)} />
+      <Stat label="Overdue" value={String(overdue.length)} sub={fmt(overdueAmt)} tone={overdue.length > 0 ? "danger" : undefined} />
+      <Stat label="Total loans" value={String(loans.length)} />
+    </div>
+  );
+}
+
+function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "danger" }) {
+  return (
+    <div className={"rounded-xl border border-border bg-card p-3 " + (tone === "danger" ? "border-destructive/40" : "")}>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={"text-xl font-semibold font-mono " + (tone === "danger" ? "text-destructive" : "")}>{value}</div>
+      {sub && <div className="text-[11px] text-muted-foreground font-mono">{sub}</div>}
+    </div>
+  );
 }

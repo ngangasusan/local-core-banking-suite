@@ -239,6 +239,22 @@ function CustomersPage() {
                     <Label>KYC notes</Label>
                     <Textarea name="kyc_notes" rows={2} />
                   </div>
+
+                  <div className="sm:col-span-2 pt-4 mt-2 border-t">
+                    <h3 className="text-sm font-semibold">Guarantor (optional)</h3>
+                    <p className="text-xs text-muted-foreground mb-3">If providing a guarantor, full name, national ID and phone are required.</p>
+                  </div>
+                  <Field label="Guarantor full name" name="g_full_name" />
+                  <Field label="Guarantor national ID" name="g_national_id" />
+                  <Field label="Guarantor phone" name="g_phone" />
+                  <Field label="Guarantor email" name="g_email" type="email" />
+                  <Field label="Relationship to customer" name="g_relationship" />
+                  <Field label="Guarantor occupation" name="g_occupation" />
+                  <Field label="Guarantor monthly income (KES)" name="g_monthly_income" type="number" />
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label>Guarantor address</Label>
+                    <Textarea name="g_address" rows={2} />
+                  </div>
                   <DialogFooter className="sm:col-span-2">
                     <Button type="submit" disabled={createMut.isPending}>
                       {createMut.isPending ? "Saving…" : "Create customer"}

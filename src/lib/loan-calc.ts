@@ -36,10 +36,10 @@ export function computeInterest(principal: number, days: number): number {
   return accrued;
 }
 
-/** Late penalty fee: 1% of principal per day past due, capped at 50% of principal. */
+/** Late penalty fee: 1% of principal per day past due (no cap). */
 export function computeLateFee(principal: number, daysPastDue: number): number {
   if (daysPastDue <= 0 || principal <= 0) return 0;
-  return Math.min(principal * 0.5, principal * 0.01 * daysPastDue);
+  return principal * 0.01 * daysPastDue;
 }
 
 /** Days past due_date (0 if not yet due or no due date). */

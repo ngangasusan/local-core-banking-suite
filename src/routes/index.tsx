@@ -67,6 +67,39 @@ function DashboardPage() {
     },
   });
 
+  const { data: disbursements } = useQuery({
+    queryKey: ["disbursements-by-year-month"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("loans")
+        .select("principal, disbursement_date, disbursed_at")
+        .not("disbursement_date", "is", null);
+      const byYear: Record<string, number> = {};
+      const byMonthCurrent: Record<number, number> = {};
+      const currentYear = new Date().getFullYear();
+      for (const l of data ?? []) {
+        const ds = (l.disbursement_date as string) ?? (l.disbursed_at as string)?.slice(0, 10);
+        if (!ds) continue;
+        const d = new Date(ds);
+        const y = d.getFullYear();
+        const amt = Number(l.principal || 0);
+        byYear[y] = (byYear[y] ?? 0) + amt;
+        if (y === currentYear) {
+          const m = d.getMonth();
+          byMonthCurrent[m] = (byMonthCurrent[m] ?? 0) + amt;
+        }
+      }
+      const years = Object.keys(byYear).map(Number).sort((a, b) => a - b)
+        .map((y) => ({ year: y, amount: byYear[y] }));
+      const months = Array.from({ length: 12 }, (_, i) => ({
+        month: new Date(currentYear, i, 1).toLocaleString("en", { month: "short" }),
+        amount: byMonthCurrent[i] ?? 0,
+      }));
+      return { years, months, currentYear };
+    },
+  });
+
   if (loading || !user) return null;
 
   const cards = [
@@ -100,6 +133,19 @@ function DashboardPage() {
               <div className="text-2xl font-semibold tracking-tight">{value}</div>
             </Link>
           ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+          <BarPanel
+            title="Money disbursed by year"
+            description="Total loan principal disbursed each year."
+            data={(disbursements?.years ?? []).map((y) => ({ label: String(y.year), value: y.amount }))}
+          />
+          <BarPanel
+            title={`Monthly disbursements — ${disbursements?.currentYear ?? new Date().getFullYear()}`}
+            description="Principal disbursed each month, Jan–Dec."
+            data={(disbursements?.months ?? []).map((m) => ({ label: m.month, value: m.amount }))}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -217,4 +263,33 @@ function fmtKES(n: number) {
     currency: "KES",
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+function BarPanel({ title, description, data }: { title: string; description: string; data: { label: string; value: number }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return (
+    <div className="bg-card border border-border rounded-xl p-6">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="font-semibold">{title}</h3>
+        <span className="text-xs text-muted-foreground font-mono">{fmtKES(total)}</span>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">{description}</p>
+      {data.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-6 text-center">No disbursements yet.</div>
+      ) : (
+        <div className="space-y-2">
+          {data.map((d) => (
+            <div key={d.label} className="flex items-center gap-3 text-xs">
+              <div className="w-10 text-muted-foreground">{d.label}</div>
+              <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                <div className="h-full bg-primary rounded" style={{ width: `${(d.value / max) * 100}%` }} />
+              </div>
+              <div className="w-28 text-right font-mono">{fmtKES(d.value)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

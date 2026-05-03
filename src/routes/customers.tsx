@@ -128,6 +128,25 @@ function CustomersPage() {
         is_id_document: true,
         uploaded_by: user!.id,
       });
+
+      // Optional guarantor
+      if (parsed.g_full_name && parsed.g_national_id && parsed.g_phone) {
+        const { error: gErr } = await supabase.from("guarantors").insert({
+          customer_id: inserted.id,
+          full_name: parsed.g_full_name,
+          national_id: parsed.g_national_id,
+          phone: parsed.g_phone,
+          email: parsed.g_email || null,
+          relationship: parsed.g_relationship || null,
+          address: parsed.g_address || null,
+          occupation: parsed.g_occupation || null,
+          monthly_income: parsed.g_monthly_income ? Number(parsed.g_monthly_income) : null,
+          created_by: user!.id,
+        });
+        if (gErr) throw gErr;
+      } else if (parsed.g_full_name || parsed.g_national_id || parsed.g_phone) {
+        throw new Error("Guarantor requires at least full name, national ID and phone.");
+      }
     },
     onSuccess: () => {
       toast.success("Customer created");

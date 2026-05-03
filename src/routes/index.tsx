@@ -67,6 +67,39 @@ function DashboardPage() {
     },
   });
 
+  const { data: disbursements } = useQuery({
+    queryKey: ["disbursements-by-year-month"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("loans")
+        .select("principal, disbursement_date, disbursed_at")
+        .not("disbursement_date", "is", null);
+      const byYear: Record<string, number> = {};
+      const byMonthCurrent: Record<number, number> = {};
+      const currentYear = new Date().getFullYear();
+      for (const l of data ?? []) {
+        const ds = (l.disbursement_date as string) ?? (l.disbursed_at as string)?.slice(0, 10);
+        if (!ds) continue;
+        const d = new Date(ds);
+        const y = d.getFullYear();
+        const amt = Number(l.principal || 0);
+        byYear[y] = (byYear[y] ?? 0) + amt;
+        if (y === currentYear) {
+          const m = d.getMonth();
+          byMonthCurrent[m] = (byMonthCurrent[m] ?? 0) + amt;
+        }
+      }
+      const years = Object.keys(byYear).map(Number).sort((a, b) => a - b)
+        .map((y) => ({ year: y, amount: byYear[y] }));
+      const months = Array.from({ length: 12 }, (_, i) => ({
+        month: new Date(currentYear, i, 1).toLocaleString("en", { month: "short" }),
+        amount: byMonthCurrent[i] ?? 0,
+      }));
+      return { years, months, currentYear };
+    },
+  });
+
   if (loading || !user) return null;
 
   const cards = [

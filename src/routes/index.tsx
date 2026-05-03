@@ -264,3 +264,32 @@ function fmtKES(n: number) {
     maximumFractionDigits: 0,
   }).format(n);
 }
+
+function BarPanel({ title, description, data }: { title: string; description: string; data: { label: string; value: number }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return (
+    <div className="bg-card border border-border rounded-xl p-6">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="font-semibold">{title}</h3>
+        <span className="text-xs text-muted-foreground font-mono">{fmtKES(total)}</span>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">{description}</p>
+      {data.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-6 text-center">No disbursements yet.</div>
+      ) : (
+        <div className="space-y-2">
+          {data.map((d) => (
+            <div key={d.label} className="flex items-center gap-3 text-xs">
+              <div className="w-10 text-muted-foreground">{d.label}</div>
+              <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                <div className="h-full bg-primary rounded" style={{ width: `${(d.value / max) * 100}%` }} />
+              </div>
+              <div className="w-28 text-right font-mono">{fmtKES(d.value)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

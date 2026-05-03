@@ -41,6 +41,15 @@ const customerSchema = z.object({
   occupation: z.string().trim().max(80).optional().or(z.literal("")),
   monthly_income: z.string().optional(),
   kyc_notes: z.string().trim().max(500).optional().or(z.literal("")),
+  // Guarantor (optional, but if any field filled, name+id+phone required)
+  g_full_name: z.string().trim().max(120).optional().or(z.literal("")),
+  g_national_id: z.string().trim().max(40).optional().or(z.literal("")),
+  g_phone: z.string().trim().max(40).optional().or(z.literal("")),
+  g_email: z.string().trim().max(150).optional().or(z.literal("")),
+  g_relationship: z.string().trim().max(60).optional().or(z.literal("")),
+  g_address: z.string().trim().max(300).optional().or(z.literal("")),
+  g_occupation: z.string().trim().max(80).optional().or(z.literal("")),
+  g_monthly_income: z.string().optional(),
 });
 
 function CustomersPage() {
@@ -119,6 +128,25 @@ function CustomersPage() {
         is_id_document: true,
         uploaded_by: user!.id,
       });
+
+      // Optional guarantor
+      if (parsed.g_full_name && parsed.g_national_id && parsed.g_phone) {
+        const { error: gErr } = await supabase.from("guarantors").insert({
+          customer_id: inserted.id,
+          full_name: parsed.g_full_name,
+          national_id: parsed.g_national_id,
+          phone: parsed.g_phone,
+          email: parsed.g_email || null,
+          relationship: parsed.g_relationship || null,
+          address: parsed.g_address || null,
+          occupation: parsed.g_occupation || null,
+          monthly_income: parsed.g_monthly_income ? Number(parsed.g_monthly_income) : null,
+          created_by: user!.id,
+        });
+        if (gErr) throw gErr;
+      } else if (parsed.g_full_name || parsed.g_national_id || parsed.g_phone) {
+        throw new Error("Guarantor requires at least full name, national ID and phone.");
+      }
     },
     onSuccess: () => {
       toast.success("Customer created");
@@ -210,6 +238,22 @@ function CustomersPage() {
                   <div className="sm:col-span-2 space-y-2">
                     <Label>KYC notes</Label>
                     <Textarea name="kyc_notes" rows={2} />
+                  </div>
+
+                  <div className="sm:col-span-2 pt-4 mt-2 border-t">
+                    <h3 className="text-sm font-semibold">Guarantor (optional)</h3>
+                    <p className="text-xs text-muted-foreground mb-3">If providing a guarantor, full name, national ID and phone are required.</p>
+                  </div>
+                  <Field label="Guarantor full name" name="g_full_name" />
+                  <Field label="Guarantor national ID" name="g_national_id" />
+                  <Field label="Guarantor phone" name="g_phone" />
+                  <Field label="Guarantor email" name="g_email" type="email" />
+                  <Field label="Relationship to customer" name="g_relationship" />
+                  <Field label="Guarantor occupation" name="g_occupation" />
+                  <Field label="Guarantor monthly income (KES)" name="g_monthly_income" type="number" />
+                  <div className="sm:col-span-2 space-y-2">
+                    <Label>Guarantor address</Label>
+                    <Textarea name="g_address" rows={2} />
                   </div>
                   <DialogFooter className="sm:col-span-2">
                     <Button type="submit" disabled={createMut.isPending}>

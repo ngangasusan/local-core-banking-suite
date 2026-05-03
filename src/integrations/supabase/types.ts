@@ -238,6 +238,65 @@ export type Database = {
         }
         Relationships: []
       }
+      guarantors: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          email: string | null
+          full_name: string
+          id: string
+          monthly_income: number | null
+          national_id: string
+          notes: string | null
+          occupation: string | null
+          phone: string
+          relationship: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          email?: string | null
+          full_name: string
+          id?: string
+          monthly_income?: number | null
+          national_id: string
+          notes?: string | null
+          occupation?: string | null
+          phone: string
+          relationship?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          monthly_income?: number | null
+          national_id?: string
+          notes?: string | null
+          occupation?: string | null
+          phone?: string
+          relationship?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guarantors_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           amount: number

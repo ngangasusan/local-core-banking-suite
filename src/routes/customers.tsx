@@ -41,6 +41,15 @@ const customerSchema = z.object({
   occupation: z.string().trim().max(80).optional().or(z.literal("")),
   monthly_income: z.string().optional(),
   kyc_notes: z.string().trim().max(500).optional().or(z.literal("")),
+  // Guarantor (optional, but if any field filled, name+id+phone required)
+  g_full_name: z.string().trim().max(120).optional().or(z.literal("")),
+  g_national_id: z.string().trim().max(40).optional().or(z.literal("")),
+  g_phone: z.string().trim().max(40).optional().or(z.literal("")),
+  g_email: z.string().trim().max(150).optional().or(z.literal("")),
+  g_relationship: z.string().trim().max(60).optional().or(z.literal("")),
+  g_address: z.string().trim().max(300).optional().or(z.literal("")),
+  g_occupation: z.string().trim().max(80).optional().or(z.literal("")),
+  g_monthly_income: z.string().optional(),
 });
 
 function CustomersPage() {

@@ -69,7 +69,7 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
         <p className="text-xs text-muted-foreground mt-2">
           Rule: minimum interest 10% of principal; daily 20 per 1,000 from day 1; capped at 30% after 14 days.
           {days <= 5 && " M-Pesa send charge included while still within 5 days."}
-          {lateFee > 0 && " Late penalty: 1% of principal per day past due (cap 50%)."}
+          {lateFee > 0 && " Late penalty: 1% of principal per day past due (no cap)."}
         </p>
 
         <div className="mt-4">

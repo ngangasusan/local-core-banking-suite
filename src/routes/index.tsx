@@ -135,6 +135,19 @@ function DashboardPage() {
           ))}
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+          <BarPanel
+            title="Money disbursed by year"
+            description="Total loan principal disbursed each year."
+            data={(disbursements?.years ?? []).map((y) => ({ label: String(y.year), value: y.amount }))}
+          />
+          <BarPanel
+            title={`Monthly disbursements — ${disbursements?.currentYear ?? new Date().getFullYear()}`}
+            description="Principal disbursed each month, Jan–Dec."
+            data={(disbursements?.months ?? []).map((m) => ({ label: m.month, value: m.amount }))}
+          />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-1">

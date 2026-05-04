@@ -39,7 +39,7 @@ function LoansPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("loans")
-        .select("*, customer:customers(full_name, customer_number)")
+        .select("*, customer:customers!loans_customer_fk(full_name, customer_number)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;

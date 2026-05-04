@@ -35,7 +35,7 @@ function AccountsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("accounts")
-        .select("*, customer:customers(full_name, customer_number)")
+        .select("*, customer:customers!accounts_customer_fk(full_name, customer_number)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;

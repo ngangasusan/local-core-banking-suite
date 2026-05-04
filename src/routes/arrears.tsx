@@ -180,7 +180,7 @@ function ArrearsPage() {
         </div>
 
         <p className="text-xs text-muted-foreground mt-4">
-          Late penalty: 1% of principal per day past due, capped at 50% of principal. Accrued automatically every day at 01:00.
+          Late penalty: 1% of principal per day past due (no cap). Accrued automatically every day at 01:00.
           Click a row to open the loan and post a repayment. Need to follow up?{" "}
           <Link to="/notifications" className="text-primary hover:underline">Send reminders →</Link>
         </p>

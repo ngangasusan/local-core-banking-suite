@@ -125,22 +125,9 @@ function LoansPage() {
 
   const disburse = useMutation({
     mutationFn: async (id: string) => {
-      // Trigger sets due_date and auto-activates
+      // Trigger sets due_date, auto-activates, and posts the disbursement journal entry.
       const { error } = await supabase.from("loans").update({ status: "disbursed" }).eq("id", id);
       if (error) throw error;
-      // GL: Loans Receivable Dr / Cash Cr
-      const { data: coa } = await supabase.from("chart_of_accounts").select("id, code").in("code", ["1000", "1100"]);
-      const cash = coa?.find((c) => c.code === "1000")?.id;
-      const loanRec = coa?.find((c) => c.code === "1100")?.id;
-      const loan = loans.find((l) => l.id === id);
-      if (cash && loanRec && loan) {
-        await supabase.from("journal_entries").insert({
-          reference: loan.loan_number,
-          description: `Disbursement ${loan.loan_number}`,
-          debit_account: loanRec, credit_account: cash, amount: Number(loan.principal),
-          source_table: "loans", source_id: id, created_by: user!.id,
-        });
-      }
     },
     onSuccess: () => { toast.success("Loan disbursed"); qc.invalidateQueries({ queryKey: ["loans"] }); qc.invalidateQueries({ queryKey: ["dashboard-stats"] }); },
     onError: (e: Error) => toast.error(e.message),

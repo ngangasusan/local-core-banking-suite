@@ -30,7 +30,7 @@ export const Route = createFileRoute("/api/public/hooks/loan-reminders")({
         const { data: loans, error } = await sb
           .from("loans")
           .select(
-            "id, loan_number, due_date, outstanding_balance, status, customer:customers(id, full_name, phone, email)"
+            "id, loan_number, due_date, outstanding_balance, status, customer:customers!loans_customer_fk(id, full_name, phone, email)"
           )
           .in("status", ["active", "in_arrears"])
           .gt("outstanding_balance", 0)

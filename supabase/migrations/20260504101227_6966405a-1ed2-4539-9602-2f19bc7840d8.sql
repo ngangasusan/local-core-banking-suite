@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_apply_repayment ON public.loan_repayments;

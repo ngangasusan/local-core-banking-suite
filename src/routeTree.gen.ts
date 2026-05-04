@@ -13,6 +13,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ReconciliationRouteImport } from './routes/reconciliation'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoansRouteImport } from './routes/loans'
 import { Route as LedgerRouteImport } from './routes/ledger'
@@ -42,6 +43,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReconciliationRoute = ReconciliationRouteImport.update({
+  id: '/reconciliation',
+  path: '/reconciliation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotificationsRoute = NotificationsRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/loans'
     | '/notifications'
+    | '/reconciliation'
     | '/reports'
     | '/settings'
     | '/transactions'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/loans'
     | '/notifications'
+    | '/reconciliation'
     | '/reports'
     | '/settings'
     | '/transactions'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/loans'
     | '/notifications'
+    | '/reconciliation'
     | '/reports'
     | '/settings'
     | '/transactions'
@@ -206,6 +218,7 @@ export interface RootRouteChildren {
   LedgerRoute: typeof LedgerRoute
   LoansRoute: typeof LoansRoute
   NotificationsRoute: typeof NotificationsRoute
+  ReconciliationRoute: typeof ReconciliationRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reconciliation': {
+      id: '/reconciliation'
+      path: '/reconciliation'
+      fullPath: '/reconciliation'
+      preLoaderRoute: typeof ReconciliationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notifications': {
@@ -326,6 +346,7 @@ const rootRouteChildren: RootRouteChildren = {
   LedgerRoute: LedgerRoute,
   LoansRoute: LoansRoute,
   NotificationsRoute: NotificationsRoute,
+  ReconciliationRoute: ReconciliationRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,

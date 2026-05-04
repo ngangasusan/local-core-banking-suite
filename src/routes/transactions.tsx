@@ -36,7 +36,7 @@ function TxnPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions")
-        .select("*, account:accounts!transactions_account_id_fkey(account_number, customer:customers(full_name))")
+        .select("*, account:accounts!transactions_account_fk(account_number, customer:customers!accounts_customer_fk(full_name))")
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
@@ -48,7 +48,7 @@ function TxnPage() {
     queryKey: ["accounts-min"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("accounts").select("id, account_number, balance, customer:customers(full_name)").eq("status", "active");
+      const { data } = await supabase.from("accounts").select("id, account_number, balance, customer:customers!accounts_customer_fk(full_name)").eq("status", "active");
       return data ?? [];
     },
   });
@@ -59,7 +59,7 @@ function TxnPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("loans")
-        .select("id, loan_number, outstanding_balance, customer:customers(full_name)")
+        .select("id, loan_number, outstanding_balance, customer:customers!loans_customer_fk(full_name)")
         .in("status", ["active", "in_arrears"])
         .gt("outstanding_balance", 0)
         .order("loan_number");

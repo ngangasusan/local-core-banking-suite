@@ -22,7 +22,7 @@ function ReportsPage() {
     queryKey: ["report-loans"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("loans").select("*, customer:customers(full_name)");
+      const { data } = await supabase.from("loans").select("*, customer:customers!loans_customer_fk(full_name)");
       return data ?? [];
     },
   });

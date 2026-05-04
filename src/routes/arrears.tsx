@@ -43,7 +43,7 @@ function ArrearsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("loans")
-        .select("id, loan_number, principal, outstanding_balance, due_date, disbursement_date, status, late_fees, customer:customers(full_name, customer_number, phone)")
+        .select("id, loan_number, principal, outstanding_balance, due_date, disbursement_date, status, late_fees, customer:customers!loans_customer_fk(full_name, customer_number, phone)")
         .in("status", ["active", "in_arrears", "disbursed"])
         .gt("outstanding_balance", 0)
         .order("due_date", { ascending: true });

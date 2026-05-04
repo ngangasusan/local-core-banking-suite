@@ -52,17 +52,8 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
         description: `Repayment for ${loan.loan_number}${rollover ? " (interest only — rolling over principal)" : ""}`,
         performed_by: user!.id,
       });
-      // GL posting
-      const { data: coa } = await supabase.from("chart_of_accounts").select("id, code").in("code", ["1000", "1100"]);
-      const cash = coa?.find((c) => c.code === "1000")?.id;
-      const loanRec = coa?.find((c) => c.code === "1100")?.id;
-      if (cash && loanRec) {
-        await supabase.from("journal_entries").insert({
-          reference, description: `Repayment ${loan.loan_number}`,
-          debit_account: cash, credit_account: loanRec, amount: numAmount,
-          source_table: "loan_repayments", source_id: null, created_by: user!.id,
-        });
-      }
+      // GL postings (split by penalty / fees / interest / principal) are handled by the
+      // apply_repayment trigger using the waterfall allocation.
 
       // Rollover: create a new loan with same principal, fresh 30-day term.
       if (rollover) {

@@ -53,7 +53,7 @@ function DashboardPage() {
       const fmt = (d: Date) => d.toISOString().slice(0, 10);
       const { data } = await supabase
         .from("loans")
-        .select("id, loan_number, due_date, outstanding_balance, status, customer:customers(full_name)")
+        .select("id, loan_number, due_date, outstanding_balance, status, customer:customers!loans_customer_fk(full_name)")
         .in("status", ["active", "in_arrears"])
         .gt("outstanding_balance", 0)
         .lte("due_date", fmt(inWeek))

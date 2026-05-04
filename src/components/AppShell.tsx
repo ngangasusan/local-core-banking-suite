@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   UserCog,
   AlertTriangle,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const NAV: NavItem[] = [
   { to: "/arrears", label: "Arrears & PAR", icon: AlertTriangle },
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/ledger", label: "General Ledger", icon: BookOpen },
+  { to: "/reconciliation", label: "Reconciliation", icon: Scale, requirePrivileged: true },
   { to: "/reports", label: "Reports", icon: FileBarChart },
   { to: "/notifications", label: "Notifications", icon: Bell },
   { to: "/users", label: "User Management", icon: UserCog, requireAdmin: true },

@@ -56,6 +56,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "accounts_customer_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "accounts_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -236,7 +243,29 @@ export type Database = {
           subject?: string
           to_email?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_customer_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_queue_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_portfolio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_queue_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guarantors: {
         Row: {
@@ -288,6 +317,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "guarantors_customer_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "guarantors_customer_id_fkey"
             columns: ["customer_id"]
@@ -384,6 +420,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "kyc_customer_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "kyc_documents_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -394,6 +437,10 @@ export type Database = {
       }
       loan_repayments: {
         Row: {
+          allocated_fees: number
+          allocated_interest: number
+          allocated_penalty: number
+          allocated_principal: number
           amount: number
           created_at: string
           id: string
@@ -407,6 +454,10 @@ export type Database = {
           reversed_by: string | null
         }
         Insert: {
+          allocated_fees?: number
+          allocated_interest?: number
+          allocated_penalty?: number
+          allocated_principal?: number
           amount: number
           created_at?: string
           id?: string
@@ -420,6 +471,10 @@ export type Database = {
           reversed_by?: string | null
         }
         Update: {
+          allocated_fees?: number
+          allocated_interest?: number
+          allocated_penalty?: number
+          allocated_principal?: number
           amount?: number
           created_at?: string
           id?: string
@@ -433,6 +488,20 @@ export type Database = {
           reversed_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "loan_repayments_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_portfolio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_repayments_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "loan_repayments_loan_id_fkey"
             columns: ["loan_id"]
@@ -533,6 +602,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "loans_account_fk"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "loans_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
@@ -540,10 +616,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "loans_customer_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "loans_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_rollover_fk"
+            columns: ["rollover_of"]
+            isOneToOne: false
+            referencedRelation: "loan_portfolio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_rollover_fk"
+            columns: ["rollover_of"]
+            isOneToOne: false
+            referencedRelation: "loans"
             referencedColumns: ["id"]
           },
           {
@@ -715,7 +812,29 @@ export type Database = {
           status?: string
           to_phone?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sms_queue_customer_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_queue_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_portfolio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_queue_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
@@ -756,6 +875,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "transactions_account_fk"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
@@ -764,6 +890,13 @@ export type Database = {
           },
           {
             foreignKeyName: "transactions_counterparty_account_id_fkey"
+            columns: ["counterparty_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_counterparty_fk"
             columns: ["counterparty_account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
@@ -794,6 +927,17 @@ export type Database = {
       }
     }
     Views: {
+      daily_recon: {
+        Row: {
+          day: string | null
+          gl_cash: number | null
+          repayments_cash: number | null
+          transactions_cash: number | null
+          variance_repayment_vs_gl: number | null
+          variance_repayment_vs_txn: number | null
+        }
+        Relationships: []
+      }
       loan_portfolio: {
         Row: {
           account_id: string | null
@@ -866,10 +1010,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "loans_account_fk"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "loans_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_customer_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
           {

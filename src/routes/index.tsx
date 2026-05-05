@@ -100,7 +100,22 @@ function DashboardPage() {
     },
   });
 
-  if (loading || !user) return null;
+  const { data: provisions } = useQuery({
+    queryKey: ["loan-provisions-summary"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("loan_provisions").select("stage, exposure, ecl_amount");
+      const buckets = { 1: { ead: 0, ecl: 0, n: 0 }, 2: { ead: 0, ecl: 0, n: 0 }, 3: { ead: 0, ecl: 0, n: 0 } } as Record<number, { ead: number; ecl: number; n: number }>;
+      for (const r of data ?? []) {
+        const s = Number(r.stage);
+        if (!buckets[s]) continue;
+        buckets[s].ead += Number(r.exposure || 0);
+        buckets[s].ecl += Number(r.ecl_amount || 0);
+        buckets[s].n += 1;
+      }
+      return buckets;
+    },
+  });
 
   const cards = [
     { label: "Customers", value: stats?.customers ?? 0, icon: Users, link: "/customers" },

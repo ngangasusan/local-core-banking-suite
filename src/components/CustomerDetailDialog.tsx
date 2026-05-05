@@ -111,7 +111,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
 
   const verifyKyc = useMutation({
     mutationFn: async ({ approve, reason }: { approve: boolean; reason?: string }) => {
-      const { error } = await supabase.rpc("verify_customer_kyc", { _customer_id: customer!.id, _approve: approve, _reason: reason ?? null });
+      const { error } = await supabase.rpc("verify_customer_kyc", { _customer_id: customer!.id, _approve: approve, _reason: reason ?? undefined });
       if (error) throw error;
     },
     onSuccess: () => {

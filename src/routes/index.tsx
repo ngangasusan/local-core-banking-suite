@@ -150,6 +150,30 @@ function DashboardPage() {
           ))}
         </div>
 
+        {provisions && (
+          <div className="bg-card border border-border rounded-xl p-6 mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold">IFRS 9 Expected Credit Loss</h3>
+              <span className="text-xs text-muted-foreground">Provisions recomputed daily</span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">Stage 1 (≤30 dpd, performing) · Stage 2 (31–90 dpd, under-performing) · Stage 3 (90+ dpd, non-performing).</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[1, 2, 3].map((s) => {
+                const b = provisions[s];
+                const tone = s === 1 ? "bg-success/10 text-success" : s === 2 ? "bg-warning/15 text-warning-foreground" : "bg-destructive/15 text-destructive";
+                return (
+                  <div key={s} className="border border-border rounded-lg p-4">
+                    <div className={"inline-block text-xs px-2 py-0.5 rounded mb-2 " + tone}>Stage {s}</div>
+                    <div className="text-xs text-muted-foreground">{b.n} loans · EAD {fmtKES(b.ead)}</div>
+                    <div className="text-xl font-semibold font-mono mt-1">{fmtKES(b.ecl)}</div>
+                    <div className="text-xs text-muted-foreground">Expected credit loss</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
           <BarPanel
             title="Money disbursed by year"

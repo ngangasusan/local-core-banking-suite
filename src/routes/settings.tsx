@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { MfaEnroll } from "@/components/MfaEnroll";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — CoreBank" }, { name: "description", content: "Users, roles and institution settings." }] }),
@@ -42,6 +43,8 @@ function SettingsPage() {
               roles.map((r) => <Badge key={r} className="capitalize">{r.replace("_", " ")}</Badge>)}
           </div>
         </div>
+
+        <MfaEnroll />
 
         <div className="bg-card border border-border rounded-xl">
           <div className="p-6 border-b border-border">

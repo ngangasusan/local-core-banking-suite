@@ -75,30 +75,39 @@ export type Database = {
         Row: {
           action: string
           created_at: string
+          entry_hash: string | null
           id: string
           new_data: Json | null
           old_data: Json | null
+          prev_hash: string | null
           record_id: string | null
+          seq: number
           table_name: string
           user_id: string | null
         }
         Insert: {
           action: string
           created_at?: string
+          entry_hash?: string | null
           id?: string
           new_data?: Json | null
           old_data?: Json | null
+          prev_hash?: string | null
           record_id?: string | null
+          seq?: number
           table_name: string
           user_id?: string | null
         }
         Update: {
           action?: string
           created_at?: string
+          entry_hash?: string | null
           id?: string
           new_data?: Json | null
           old_data?: Json | null
+          prev_hash?: string | null
           record_id?: string | null
+          seq?: number
           table_name?: string
           user_id?: string | null
         }
@@ -131,6 +140,41 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_pii_vault: {
+        Row: {
+          customer_id: string
+          dob_enc: string | null
+          email_enc: string | null
+          national_id_enc: string | null
+          phone_enc: string | null
+          updated_at: string
+        }
+        Insert: {
+          customer_id: string
+          dob_enc?: string | null
+          email_enc?: string | null
+          national_id_enc?: string | null
+          phone_enc?: string | null
+          updated_at?: string
+        }
+        Update: {
+          customer_id?: string
+          dob_enc?: string | null
+          email_enc?: string | null
+          national_id_enc?: string | null
+          phone_enc?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_pii_vault_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -148,7 +192,12 @@ export type Database = {
           id: string
           is_active: boolean
           kyc_notes: string | null
+          kyc_rejection_reason: string | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
+          kyc_submitted_at: string | null
+          kyc_submitted_by: string | null
+          kyc_verified_at: string | null
+          kyc_verified_by: string | null
           monthly_income: number | null
           national_id: string | null
           occupation: string | null
@@ -171,7 +220,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           kyc_notes?: string | null
+          kyc_rejection_reason?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          kyc_submitted_at?: string | null
+          kyc_submitted_by?: string | null
+          kyc_verified_at?: string | null
+          kyc_verified_by?: string | null
           monthly_income?: number | null
           national_id?: string | null
           occupation?: string | null
@@ -194,7 +248,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           kyc_notes?: string | null
+          kyc_rejection_reason?: string | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          kyc_submitted_at?: string | null
+          kyc_submitted_by?: string | null
+          kyc_verified_at?: string | null
+          kyc_verified_by?: string | null
           monthly_income?: number | null
           national_id?: string | null
           occupation?: string | null
@@ -431,6 +490,54 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_provisions: {
+        Row: {
+          computed_at: string
+          dpd: number
+          ecl_amount: number
+          exposure: number
+          lgd_rate: number
+          loan_id: string
+          pd_rate: number
+          stage: number
+        }
+        Insert: {
+          computed_at?: string
+          dpd?: number
+          ecl_amount: number
+          exposure?: number
+          lgd_rate?: number
+          loan_id: string
+          pd_rate: number
+          stage: number
+        }
+        Update: {
+          computed_at?: string
+          dpd?: number
+          ecl_amount?: number
+          exposure?: number
+          lgd_rate?: number
+          loan_id?: string
+          pd_rate?: number
+          stage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_provisions_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: true
+            referencedRelation: "loan_portfolio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_provisions_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: true
+            referencedRelation: "loans"
             referencedColumns: ["id"]
           },
         ]
@@ -724,6 +831,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          mfa_required: boolean
           updated_at: string
         }
         Insert: {
@@ -733,6 +841,7 @@ export type Database = {
           full_name: string
           id: string
           is_active?: boolean
+          mfa_required?: boolean
           updated_at?: string
         }
         Update: {
@@ -742,6 +851,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          mfa_required?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -1041,6 +1151,7 @@ export type Database = {
       }
     }
     Functions: {
+      _pii_key: { Args: never; Returns: string }
       accrue_late_fees_daily: { Args: never; Returns: undefined }
       compute_late_fee: {
         Args: { _days_past_due: number; _principal: number }
@@ -1053,6 +1164,15 @@ export type Database = {
       compute_loan_total_due: {
         Args: { _days: number; _principal: number }
         Returns: number
+      }
+      decrypt_customer_pii: {
+        Args: { _customer_id: string }
+        Returns: {
+          dob: string
+          email: string
+          national_id: string
+          phone: string
+        }[]
       }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
@@ -1087,6 +1207,19 @@ export type Database = {
       recompute_credit_score: {
         Args: { _customer_id: string }
         Returns: number
+      }
+      recompute_loan_provisions: { Args: never; Returns: number }
+      user_has_mfa: { Args: { _uid: string }; Returns: boolean }
+      verify_audit_chain: {
+        Args: never
+        Returns: {
+          broken_seq: number
+          total: number
+        }[]
+      }
+      verify_customer_kyc: {
+        Args: { _approve: boolean; _customer_id: string; _reason?: string }
+        Returns: undefined
       }
     }
     Enums: {

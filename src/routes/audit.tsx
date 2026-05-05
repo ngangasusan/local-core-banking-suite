@@ -1,12 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ShieldCheck, ShieldAlert } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/audit")({
   head: () => ({ meta: [{ title: "Audit Log — CoreBank" }] }),
@@ -42,23 +45,42 @@ function AuditPage() {
     );
   }
 
+  const verifyChain = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("verify_audit_chain");
+      if (error) throw error;
+      return (data as any[])?.[0] as { broken_seq: number | null; total: number };
+    },
+    onSuccess: (r) => {
+      if (r.broken_seq) toast.error(`Tampering detected at sequence #${r.broken_seq} (of ${r.total})`);
+      else toast.success(`Audit chain intact — ${r.total} entries verified`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <AppShell>
       <div className="p-6 lg:p-10 max-w-7xl mx-auto">
         <PageHeader
           title="Audit Log"
-          description="Full trail of system actions."
+          description="Full trail of system actions. Each row is cryptographically chained to the previous one."
           actions={
-            <Select value={table} onValueChange={setTable}>
-              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All tables</SelectItem>
-                <SelectItem value="customers">Customers</SelectItem>
-                <SelectItem value="loans">Loans</SelectItem>
-                <SelectItem value="transactions">Transactions</SelectItem>
-                <SelectItem value="user_roles">User roles</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => verifyChain.mutate()} disabled={verifyChain.isPending}>
+                {verifyChain.data?.broken_seq ? <ShieldAlert className="h-3.5 w-3.5 mr-1 text-destructive" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1" />}
+                Verify chain integrity
+              </Button>
+              <Select value={table} onValueChange={setTable}>
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All tables</SelectItem>
+                  <SelectItem value="customers">Customers</SelectItem>
+                  <SelectItem value="loans">Loans</SelectItem>
+                  <SelectItem value="transactions">Transactions</SelectItem>
+                  <SelectItem value="user_roles">User roles</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           }
         />
         <div className="bg-card border border-border rounded-xl overflow-x-auto">

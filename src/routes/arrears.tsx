@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
 import { agingBucket, computeTotalDue, daysPastDue, loanDaysElapsed } from "@/lib/loan-calc";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 export const Route = createFileRoute("/arrears")({
   head: () => ({ meta: [{ title: "Arrears & PAR — CoreBank" }, { name: "description", content: "Portfolio at risk: aging buckets and overdue loans." }] }),
@@ -22,9 +23,7 @@ const BUCKETS: { key: ReturnType<typeof agingBucket>; label: string; tone: strin
   { key: "par_90_plus", label: "90+ days",  tone: "bg-destructive/25 text-destructive border-destructive/50" },
 ];
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(n);
-}
+const fmt = _fmtKES;
 
 function ArrearsPage() {
   const { user, loading } = useAuth();

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 type LoanLite = {
   id: string;
@@ -16,9 +17,7 @@ type LoanLite = {
   customer?: { full_name: string; customer_number: string } | null;
 };
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 2 }).format(n);
-}
+const fmt = _fmtKES;
 
 export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { data: payments = [] } = useQuery({

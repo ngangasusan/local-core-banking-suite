@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 export const Route = createFileRoute("/reconciliation")({
   head: () => ({ meta: [{ title: "Reconciliation — CoreBank" }, { name: "description", content: "Daily cash reconciliation between transactions, repayments, and the general ledger." }] }),
@@ -21,9 +22,7 @@ type Row = {
   variance_repayment_vs_gl: number | string;
 };
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 2 }).format(n);
-}
+const fmt = _fmtKES;
 
 function ReconciliationPage() {
   const { user, loading, hasRole } = useAuth();

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 export const Route = createFileRoute("/ledger")({
   head: () => ({ meta: [{ title: "General Ledger — CoreBank" }, { name: "description", content: "Trial balance and double-entry summary." }] }),
@@ -87,6 +88,4 @@ function LedgerPage() {
   );
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(n);
-}
+const fmt = _fmtKES;

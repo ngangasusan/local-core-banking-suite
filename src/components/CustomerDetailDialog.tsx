@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 type CustomerLite = {
   id: string;
@@ -21,9 +22,7 @@ type CustomerLite = {
   kyc_status: string;
 };
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(n);
-}
+const fmt = _fmtKES;
 
 export function CustomerDetailDialog({ customer, open, onOpenChange }: { customer: CustomerLite | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { data: accounts = [] } = useQuery({

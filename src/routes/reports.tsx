@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [{ title: "Reports — CoreBank" }, { name: "description", content: "Portfolio at risk, aging and financial summaries." }] }),
@@ -104,4 +105,4 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
     </div>
   );
 }
-function fmt(n: number) { return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(n); }
+const fmt = _fmtKES;

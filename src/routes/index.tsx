@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   component: DashboardPage,
@@ -296,13 +297,7 @@ function Metric({
   );
 }
 
-function fmtKES(n: number) {
-  return new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency: "KES",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
+const fmtKES = _fmtKES;
 
 function BarPanel({ title, description, data }: { title: string; description: string; data: { label: string; value: number }[] }) {
   const max = Math.max(1, ...data.map((d) => d.value));

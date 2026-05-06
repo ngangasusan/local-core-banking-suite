@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 export const Route = createFileRoute("/transactions")({
   head: () => ({ meta: [{ title: "Transactions — CoreBank" }, { name: "description", content: "Deposits, withdrawals and transfers." }] }),
@@ -257,6 +258,4 @@ function TxnPage() {
   );
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES" }).format(n);
-}
+const fmt = _fmtKES;

@@ -16,6 +16,7 @@ import { RepaymentDialog } from "@/components/RepaymentDialog";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
 import { computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 import { toast } from "sonner";
+import { fmtKES as _fmtKES } from "@/lib/format";
 
 export const Route = createFileRoute("/loans")({
   head: () => ({ meta: [{ title: "Loans — CoreBank" }, { name: "description", content: "Loan origination, approval and disbursement." }] }),
@@ -317,9 +318,7 @@ function LoanStatusBadge({ status }: { status: string }) {
   return <span className={"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize " + (map[status] ?? "bg-muted")}>{status.replace("_", " ")}</span>;
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(n);
-}
+const fmt = _fmtKES;
 
 function LoanStats({ loans }: { loans: any[] }) {
   const active = loans.filter((l) => ["active", "in_arrears", "disbursed"].includes(l.status));

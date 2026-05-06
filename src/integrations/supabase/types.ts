@@ -140,6 +140,45 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_actions: {
+        Row: {
+          channel: Database["public"]["Enums"]["collection_channel"]
+          created_at: string
+          customer_id: string
+          id: string
+          loan_id: string
+          next_action_at: string | null
+          notes: string | null
+          outcome: Database["public"]["Enums"]["collection_outcome"]
+          performed_at: string
+          performed_by: string | null
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["collection_channel"]
+          created_at?: string
+          customer_id: string
+          id?: string
+          loan_id: string
+          next_action_at?: string | null
+          notes?: string | null
+          outcome: Database["public"]["Enums"]["collection_outcome"]
+          performed_at?: string
+          performed_by?: string | null
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["collection_channel"]
+          created_at?: string
+          customer_id?: string
+          id?: string
+          loan_id?: string
+          next_action_at?: string | null
+          notes?: string | null
+          outcome?: Database["public"]["Enums"]["collection_outcome"]
+          performed_at?: string
+          performed_by?: string | null
+        }
+        Relationships: []
+      }
       customer_pii_vault: {
         Row: {
           customer_id: string
@@ -314,6 +353,13 @@ export type Database = {
             foreignKeyName: "email_queue_loan_fk"
             columns: ["loan_id"]
             isOneToOne: false
+            referencedRelation: "collections_worklist"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "email_queue_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
             referencedRelation: "loan_portfolio"
             referencedColumns: ["id"]
           },
@@ -325,6 +371,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      guarantor_followups: {
+        Row: {
+          contacted_at: string | null
+          created_at: string
+          guarantor_id: string
+          id: string
+          loan_id: string
+          next_action_at: string | null
+          notes: string | null
+          performed_by: string | null
+          status: Database["public"]["Enums"]["guarantor_followup_status"]
+          updated_at: string
+        }
+        Insert: {
+          contacted_at?: string | null
+          created_at?: string
+          guarantor_id: string
+          id?: string
+          loan_id: string
+          next_action_at?: string | null
+          notes?: string | null
+          performed_by?: string | null
+          status?: Database["public"]["Enums"]["guarantor_followup_status"]
+          updated_at?: string
+        }
+        Update: {
+          contacted_at?: string | null
+          created_at?: string
+          guarantor_id?: string
+          id?: string
+          loan_id?: string
+          next_action_at?: string | null
+          notes?: string | null
+          performed_by?: string | null
+          status?: Database["public"]["Enums"]["guarantor_followup_status"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       guarantors: {
         Row: {
@@ -530,6 +615,13 @@ export type Database = {
             foreignKeyName: "loan_provisions_loan_id_fkey"
             columns: ["loan_id"]
             isOneToOne: true
+            referencedRelation: "collections_worklist"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "loan_provisions_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: true
             referencedRelation: "loan_portfolio"
             referencedColumns: ["id"]
           },
@@ -599,6 +691,13 @@ export type Database = {
             foreignKeyName: "loan_repayments_loan_fk"
             columns: ["loan_id"]
             isOneToOne: false
+            referencedRelation: "collections_worklist"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "loan_repayments_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
             referencedRelation: "loan_portfolio"
             referencedColumns: ["id"]
           },
@@ -608,6 +707,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "loans"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_repayments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "collections_worklist"
+            referencedColumns: ["loan_id"]
           },
           {
             foreignKeyName: "loan_repayments_loan_id_fkey"
@@ -624,6 +730,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      loan_restructures: {
+        Row: {
+          applied_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          loan_id: string
+          new_due_date: string
+          new_interest_rate: number | null
+          new_term_months: number | null
+          reason: string
+          rejection_reason: string | null
+          requested_at: string
+          requested_by: string | null
+          status: Database["public"]["Enums"]["workflow_status"]
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          loan_id: string
+          new_due_date: string
+          new_interest_rate?: number | null
+          new_term_months?: number | null
+          reason: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["workflow_status"]
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          loan_id?: string
+          new_due_date?: string
+          new_interest_rate?: number | null
+          new_term_months?: number | null
+          reason?: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["workflow_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      loan_writeoffs: {
+        Row: {
+          amount: number
+          applied_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          loan_id: string
+          reason: string
+          rejection_reason: string | null
+          requested_at: string
+          requested_by: string | null
+          status: Database["public"]["Enums"]["workflow_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          loan_id: string
+          reason: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["workflow_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          loan_id?: string
+          reason?: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["workflow_status"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       loans: {
         Row: {
@@ -740,6 +948,13 @@ export type Database = {
             foreignKeyName: "loans_rollover_fk"
             columns: ["rollover_of"]
             isOneToOne: false
+            referencedRelation: "collections_worklist"
+            referencedColumns: ["loan_id"]
+          },
+          {
+            foreignKeyName: "loans_rollover_fk"
+            columns: ["rollover_of"]
+            isOneToOne: false
             referencedRelation: "loan_portfolio"
             referencedColumns: ["id"]
           },
@@ -749,6 +964,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "loans"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_rollover_of_fkey"
+            columns: ["rollover_of"]
+            isOneToOne: false
+            referencedRelation: "collections_worklist"
+            referencedColumns: ["loan_id"]
           },
           {
             foreignKeyName: "loans_rollover_of_fkey"
@@ -856,6 +1078,51 @@ export type Database = {
         }
         Relationships: []
       }
+      promises_to_pay: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          loan_id: string
+          notes: string | null
+          promised_amount: number
+          promised_date: string
+          recorded_by: string | null
+          resolved_amount: number
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["ptp_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          loan_id: string
+          notes?: string | null
+          promised_amount: number
+          promised_date: string
+          recorded_by?: string | null
+          resolved_amount?: number
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ptp_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          loan_id?: string
+          notes?: string | null
+          promised_amount?: number
+          promised_date?: string
+          recorded_by?: string | null
+          resolved_amount?: number
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ptp_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -929,6 +1196,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_queue_loan_fk"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "collections_worklist"
+            referencedColumns: ["loan_id"]
           },
           {
             foreignKeyName: "sms_queue_loan_fk"
@@ -1037,6 +1311,39 @@ export type Database = {
       }
     }
     Views: {
+      collections_worklist: {
+        Row: {
+          bucket: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          dpd: number | null
+          due_date: string | null
+          last_contact_at: string | null
+          loan_id: string | null
+          loan_number: string | null
+          open_ptp_amount: number | null
+          open_ptp_date: string | null
+          outstanding_balance: number | null
+          status: Database["public"]["Enums"]["loan_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_customer_fk"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_recon: {
         Row: {
           day: string | null
@@ -1153,6 +1460,14 @@ export type Database = {
     Functions: {
       _pii_key: { Args: never; Returns: string }
       accrue_late_fees_daily: { Args: never; Returns: undefined }
+      approve_loan_restructure: {
+        Args: { _approve: boolean; _id: string; _reason?: string }
+        Returns: undefined
+      }
+      approve_loan_writeoff: {
+        Args: { _approve: boolean; _id: string; _reason?: string }
+        Returns: undefined
+      }
       compute_late_fee: {
         Args: { _days_past_due: number; _principal: number }
         Returns: number
@@ -1209,6 +1524,7 @@ export type Database = {
         Returns: number
       }
       recompute_loan_provisions: { Args: never; Returns: number }
+      sweep_broken_promises: { Args: never; Returns: number }
       user_has_mfa: { Args: { _uid: string }; Returns: boolean }
       verify_audit_chain: {
         Args: never
@@ -1233,7 +1549,29 @@ export type Database = {
         | "auditor"
         | "super_admin"
         | "finance_officer"
+      collection_channel:
+        | "call"
+        | "sms"
+        | "email"
+        | "visit"
+        | "letter"
+        | "field"
+      collection_outcome:
+        | "reached"
+        | "no_answer"
+        | "wrong_number"
+        | "promise"
+        | "refused"
+        | "partial_payment"
+        | "dispute"
+        | "other"
       customer_type: "individual" | "sme" | "corporate"
+      guarantor_followup_status:
+        | "pending"
+        | "contacted"
+        | "committed"
+        | "escalated"
+        | "closed"
       kyc_status: "pending" | "verified" | "rejected"
       loan_method: "flat" | "reducing_balance" | "amortized"
       loan_status:
@@ -1245,6 +1583,7 @@ export type Database = {
         | "rejected"
         | "in_arrears"
         | "draft"
+      ptp_status: "open" | "kept" | "broken" | "cancelled"
       txn_status: "pending" | "completed" | "reversed" | "failed"
       txn_type:
         | "deposit"
@@ -1254,6 +1593,12 @@ export type Database = {
         | "loan_repayment"
         | "fee"
         | "interest"
+      workflow_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "applied"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1392,7 +1737,25 @@ export const Constants = {
         "super_admin",
         "finance_officer",
       ],
+      collection_channel: ["call", "sms", "email", "visit", "letter", "field"],
+      collection_outcome: [
+        "reached",
+        "no_answer",
+        "wrong_number",
+        "promise",
+        "refused",
+        "partial_payment",
+        "dispute",
+        "other",
+      ],
       customer_type: ["individual", "sme", "corporate"],
+      guarantor_followup_status: [
+        "pending",
+        "contacted",
+        "committed",
+        "escalated",
+        "closed",
+      ],
       kyc_status: ["pending", "verified", "rejected"],
       loan_method: ["flat", "reducing_balance", "amortized"],
       loan_status: [
@@ -1405,6 +1768,7 @@ export const Constants = {
         "in_arrears",
         "draft",
       ],
+      ptp_status: ["open", "kept", "broken", "cancelled"],
       txn_status: ["pending", "completed", "reversed", "failed"],
       txn_type: [
         "deposit",
@@ -1414,6 +1778,13 @@ export const Constants = {
         "loan_repayment",
         "fee",
         "interest",
+      ],
+      workflow_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "applied",
+        "cancelled",
       ],
     },
   },

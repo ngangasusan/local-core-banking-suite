@@ -17,6 +17,7 @@ import {
   UserCog,
   AlertTriangle,
   Scale,
+  HandCoins,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const NAV: NavItem[] = [
   { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/loans", label: "Loans", icon: Banknote },
   { to: "/arrears", label: "Arrears & PAR", icon: AlertTriangle },
+  { to: "/collections", label: "Collections", icon: HandCoins },
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/ledger", label: "General Ledger", icon: BookOpen },
   { to: "/reconciliation", label: "Reconciliation", icon: Scale, requirePrivileged: true },

@@ -17,6 +17,7 @@ import {
   UserCog,
   AlertTriangle,
   Scale,
+  HandCoins,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";

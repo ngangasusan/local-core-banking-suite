@@ -18,6 +18,7 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoansRouteImport } from './routes/loans'
 import { Route as LedgerRouteImport } from './routes/ledger'
 import { Route as CustomersRouteImport } from './routes/customers'
+import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as ArrearsRouteImport } from './routes/arrears'
@@ -70,6 +71,11 @@ const CustomersRoute = CustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CollectionsRoute = CollectionsRouteImport.update({
+  id: '/collections',
+  path: '/collections',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/arrears': typeof ArrearsRoute
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
+  '/collections': typeof CollectionsRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/arrears': typeof ArrearsRoute
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
+  '/collections': typeof CollectionsRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/arrears': typeof ArrearsRoute
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRoute
+  '/collections': typeof CollectionsRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
   '/loans': typeof LoansRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/arrears'
     | '/audit'
     | '/auth'
+    | '/collections'
     | '/customers'
     | '/ledger'
     | '/loans'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/arrears'
     | '/audit'
     | '/auth'
+    | '/collections'
     | '/customers'
     | '/ledger'
     | '/loans'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/arrears'
     | '/audit'
     | '/auth'
+    | '/collections'
     | '/customers'
     | '/ledger'
     | '/loans'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   ArrearsRoute: typeof ArrearsRoute
   AuditRoute: typeof AuditRoute
   AuthRoute: typeof AuthRoute
+  CollectionsRoute: typeof CollectionsRoute
   CustomersRoute: typeof CustomersRoute
   LedgerRoute: typeof LedgerRoute
   LoansRoute: typeof LoansRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/collections': {
+      id: '/collections'
+      path: '/collections'
+      fullPath: '/collections'
+      preLoaderRoute: typeof CollectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -342,6 +362,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArrearsRoute: ArrearsRoute,
   AuditRoute: AuditRoute,
   AuthRoute: AuthRoute,
+  CollectionsRoute: CollectionsRoute,
   CustomersRoute: CustomersRoute,
   LedgerRoute: LedgerRoute,
   LoansRoute: LoansRoute,

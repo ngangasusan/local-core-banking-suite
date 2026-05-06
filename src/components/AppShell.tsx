@@ -50,6 +50,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, roles, signOut, hasRole } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const isAdmin = hasRole("admin") || hasRole("super_admin");
   const isPrivileged = isAdmin || hasRole("auditor");

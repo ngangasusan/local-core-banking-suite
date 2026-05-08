@@ -9,6 +9,12 @@ import { ZodError } from "zod";
 import { env } from "./env.js";
 import { pool } from "./db.js";
 import authRoutes from "./routes/auth.routes.js";
+import customersRoutes from "./routes/customers.routes.js";
+import accountsRoutes from "./routes/accounts.routes.js";
+import loansRoutes from "./routes/loans.routes.js";
+import kycRoutes from "./routes/kyc.routes.js";
+import profilesRoutes from "./routes/profiles.routes.js";
+import rolesRoutes from "./routes/roles.routes.js";
 
 const log = pino({ level: env.NODE_ENV === "production" ? "info" : "debug" });
 const app = express();
@@ -35,6 +41,12 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/customers", customersRoutes);
+app.use("/accounts", accountsRoutes);
+app.use("/loans", loansRoutes);
+app.use("/kyc", kycRoutes);
+app.use("/profiles", profilesRoutes);
+app.use("/roles", rolesRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: "not_found" }));

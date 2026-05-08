@@ -7,10 +7,10 @@ import { newId } from "../util/uuid.js";
 export type AuditAction = "INSERT" | "UPDATE" | "DELETE";
 
 export async function writeAudit(opts: {
-  userId: string | null;
+  userId: string | null | undefined;
   action: AuditAction;
   table: string;
-  recordId: string | null;
+  recordId: string | null | undefined;
   oldData?: unknown;
   newData?: unknown;
 }): Promise<void> {

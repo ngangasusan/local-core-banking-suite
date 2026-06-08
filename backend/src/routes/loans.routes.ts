@@ -6,6 +6,8 @@ import { ah } from "../util/asyncRoute.js";
 import { newId } from "../util/uuid.js";
 import { ListQuery, pageLimits, safeOrderBy } from "../util/listing.js";
 import { writeAudit } from "../services/audit.js";
+import { disburseLoan } from "../services/loans.js";
+import { hasRole } from "../auth/middleware.js";
 
 const r = Router();
 r.use(requireAuth);
@@ -135,6 +137,28 @@ r.post("/:id/decision", requireRole("admin", "super_admin", "manager"),
       recordId: req.params.id, newData: { decision: body.decision },
     });
     res.json({ ok: true });
+  }));
+
+// Disburse an approved loan: flips to active, sets dates, posts Dr 1100 / Cr 1000.
+const DisburseBody = z.object({ disbursement_date: z.string().date().optional() });
+
+r.post("/:id/disburse", requireRole("admin", "super_admin", "manager", "finance_officer"),
+  ah(async (req, res) => {
+    const body = DisburseBody.parse(req.body ?? {});
+    try {
+      const out = await disburseLoan(
+        req.params.id, req.user!.sub, body.disbursement_date,
+        { bypassFourEyes: hasRole(req, "super_admin") },
+      );
+      res.json(out);
+    } catch (e) {
+      const msg = (e as Error).message;
+      const map: Record<string, number> = {
+        not_found: 404, not_approved: 409, four_eyes_violation: 403,
+      };
+      if (map[msg]) return res.status(map[msg]).json({ error: msg });
+      throw e;
+    }
   }));
 
 // Cancel a draft/pending loan (creator or manager).

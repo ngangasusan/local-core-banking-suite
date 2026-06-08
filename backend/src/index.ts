@@ -15,6 +15,8 @@ import loansRoutes from "./routes/loans.routes.js";
 import kycRoutes from "./routes/kyc.routes.js";
 import profilesRoutes from "./routes/profiles.routes.js";
 import rolesRoutes from "./routes/roles.routes.js";
+import repaymentsRoutes from "./routes/repayments.routes.js";
+import ledgerRoutes from "./routes/ledger.routes.js";
 
 const log = pino({ level: env.NODE_ENV === "production" ? "info" : "debug" });
 const app = express();
@@ -47,6 +49,8 @@ app.use("/loans", loansRoutes);
 app.use("/kyc", kycRoutes);
 app.use("/profiles", profilesRoutes);
 app.use("/roles", rolesRoutes);
+app.use("/repayments", repaymentsRoutes);
+app.use("/ledger", ledgerRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: "not_found" }));

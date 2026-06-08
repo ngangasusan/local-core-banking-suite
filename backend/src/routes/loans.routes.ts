@@ -139,6 +139,30 @@ r.post("/:id/decision", requireRole("admin", "super_admin", "manager"),
     res.json({ ok: true });
   }));
 
+// Disburse an approved loan: flips to active, sets dates, posts Dr 1100 / Cr 1000.
+const DisburseBody = z.object({ disbursement_date: z.string().date().optional() });
+
+r.post("/:id/disburse", requireRole("admin", "super_admin", "manager", "finance_officer"),
+  ah(async (req, res) => {
+    const body = DisburseBody.parse(req.body ?? {});
+    try {
+      // 4-eyes is enforced in the service; super_admin can bypass.
+      const out = await disburseLoan(
+        req.params.id,
+        hasRole(req, "super_admin") ? `${req.user!.sub}-override` : req.user!.sub,
+        body.disbursement_date,
+      );
+      res.json(out);
+    } catch (e) {
+      const msg = (e as Error).message;
+      const map: Record<string, number> = {
+        not_found: 404, not_approved: 409, four_eyes_violation: 403,
+      };
+      if (map[msg]) return res.status(map[msg]).json({ error: msg });
+      throw e;
+    }
+  }));
+
 // Cancel a draft/pending loan (creator or manager).
 r.delete("/:id", requireRole("admin", "super_admin", "manager", "loan_officer"),
   ah(async (req, res) => {

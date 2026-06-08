@@ -6,6 +6,8 @@ import { ah } from "../util/asyncRoute.js";
 import { newId } from "../util/uuid.js";
 import { ListQuery, pageLimits, safeOrderBy } from "../util/listing.js";
 import { writeAudit } from "../services/audit.js";
+import { disburseLoan } from "../services/loans.js";
+import { hasRole } from "../auth/middleware.js";
 
 const r = Router();
 r.use(requireAuth);

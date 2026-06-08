@@ -146,11 +146,9 @@ r.post("/:id/disburse", requireRole("admin", "super_admin", "manager", "finance_
   ah(async (req, res) => {
     const body = DisburseBody.parse(req.body ?? {});
     try {
-      // 4-eyes is enforced in the service; super_admin can bypass.
       const out = await disburseLoan(
-        req.params.id,
-        hasRole(req, "super_admin") ? `${req.user!.sub}-override` : req.user!.sub,
-        body.disbursement_date,
+        req.params.id, req.user!.sub, body.disbursement_date,
+        { bypassFourEyes: hasRole(req, "super_admin") },
       );
       res.json(out);
     } catch (e) {

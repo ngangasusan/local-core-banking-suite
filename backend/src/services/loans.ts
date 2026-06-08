@@ -36,13 +36,13 @@ async function lockLoan(cx: PoolConnection, loanId: string): Promise<LoanRow> {
 export interface DisburseResult { loan_id: string; je_id: string; disbursement_date: string; due_date: string; }
 
 export async function disburseLoan(
-  loanId: string, actorId: string, disbursementDate?: string
+  loanId: string, actorId: string, disbursementDate?: string,
+  opts: { bypassFourEyes?: boolean } = {},
 ): Promise<DisburseResult> {
   return tx(async (cx) => {
     const loan = await lockLoan(cx, loanId);
     if (loan.status !== "approved") throw new Error("not_approved");
-    // 4-eyes: creator cannot disburse their own loan (super_admin can override at route layer).
-    if (loan.created_by && loan.created_by === actorId)
+    if (!opts.bypassFourEyes && loan.created_by && loan.created_by === actorId)
       throw new Error("four_eyes_violation");
 
     const disbDate = disbursementDate ?? isoDate(new Date());

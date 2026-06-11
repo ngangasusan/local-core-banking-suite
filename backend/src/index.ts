@@ -56,6 +56,11 @@ app.use("/profiles", profilesRoutes);
 app.use("/roles", rolesRoutes);
 app.use("/repayments", repaymentsRoutes);
 app.use("/ledger", ledgerRoutes);
+app.use("/collections", collectionsRoutes);
+app.use("/restructures", restructuresRoutes);
+app.use("/writeoffs", writeoffsRoutes);
+app.use("/credit", creditRoutes);
+app.use("/provisions", provisionsRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: "not_found" }));

@@ -17,6 +17,11 @@ import profilesRoutes from "./routes/profiles.routes.js";
 import rolesRoutes from "./routes/roles.routes.js";
 import repaymentsRoutes from "./routes/repayments.routes.js";
 import ledgerRoutes from "./routes/ledger.routes.js";
+import collectionsRoutes from "./routes/collections.routes.js";
+import restructuresRoutes from "./routes/restructures.routes.js";
+import writeoffsRoutes from "./routes/writeoffs.routes.js";
+import creditRoutes from "./routes/credit.routes.js";
+import provisionsRoutes from "./routes/provisions.routes.js";
 
 const log = pino({ level: env.NODE_ENV === "production" ? "info" : "debug" });
 const app = express();

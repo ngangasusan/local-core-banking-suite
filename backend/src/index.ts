@@ -22,6 +22,10 @@ import restructuresRoutes from "./routes/restructures.routes.js";
 import writeoffsRoutes from "./routes/writeoffs.routes.js";
 import creditRoutes from "./routes/credit.routes.js";
 import provisionsRoutes from "./routes/provisions.routes.js";
+import notificationsRoutes from "./routes/notifications.routes.js";
+import reconciliationRoutes from "./routes/reconciliation.routes.js";
+import reportsRoutes from "./routes/reports.routes.js";
+import { startWorker } from "./services/worker.js";
 
 const log = pino({ level: env.NODE_ENV === "production" ? "info" : "debug" });
 const app = express();
@@ -61,6 +65,9 @@ app.use("/restructures", restructuresRoutes);
 app.use("/writeoffs", writeoffsRoutes);
 app.use("/credit", creditRoutes);
 app.use("/provisions", provisionsRoutes);
+app.use("/notifications", notificationsRoutes);
+app.use("/reconciliation", reconciliationRoutes);
+app.use("/reports", reportsRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: "not_found" }));
@@ -76,4 +83,13 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "internal_error", message: env.NODE_ENV === "production" ? undefined : message });
 });
 
-app.listen(env.PORT, () => log.info(`backend listening on :${env.PORT}`));
+app.listen(env.PORT, () => {
+  log.info(`backend listening on :${env.PORT}`);
+  if (env.NOTIFICATION_WORKER_ENABLED) {
+    startWorker({
+      intervalMs: env.NOTIFICATION_INTERVAL_MS,
+      log: (msg, meta) => log.info({ ...(meta as object | undefined) }, msg),
+    });
+    log.info(`notification worker started (interval=${env.NOTIFICATION_INTERVAL_MS}ms)`);
+  }
+});

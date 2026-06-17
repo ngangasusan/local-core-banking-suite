@@ -13,6 +13,8 @@ const Schema = z.object({
   PII_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/, "PII_KEY must be 64 hex chars (32 bytes)"),
   UPLOAD_DIR: z.string().default("./uploads"),
   SUPABASE_PG_URL: z.string().optional(),
+  NOTIFICATION_WORKER_ENABLED: z.coerce.boolean().default(true),
+  NOTIFICATION_INTERVAL_MS: z.coerce.number().int().positive().default(10_000),
 });
 
 export const env = Schema.parse(process.env);

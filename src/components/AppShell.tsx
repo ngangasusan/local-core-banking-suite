@@ -119,7 +119,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </Link>
 
-        <div className="flex-1" />
+        {/* Global search */}
+        <div className="flex-1 flex justify-center px-2">
+          <GlobalSearch />
+        </div>
+
+        {/* Company name */}
+        <div className="hidden lg:flex flex-col items-end leading-tight shrink-0">
+          <span className="text-xs font-semibold text-sidebar-foreground">
+            CoreBank Microfinance Ltd
+          </span>
+          <span className="text-[10px] text-muted-foreground">HQ • Nairobi Branch</span>
+        </div>
 
         <Link
           to="/notifications"
@@ -143,7 +154,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center">
                 {mounted ? initials || "U" : "U"}
               </div>
-              <div className="hidden md:flex flex-col items-start min-w-0 max-w-[180px]">
+              <div className="hidden md:flex flex-col items-start min-w-0 max-w-[160px]">
                 <span className="text-xs font-medium truncate w-full text-left">
                   {user?.email}
                 </span>

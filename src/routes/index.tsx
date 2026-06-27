@@ -135,6 +135,13 @@ function DashboardPage() {
           description="Snapshot of your institution's performance and pipeline."
         />
 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="lg:col-span-2">
+            <LatestActivity />
+          </div>
+          <DashboardSidebar />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {cards.map(({ label, value, icon: Icon, link }) => (
             <Link

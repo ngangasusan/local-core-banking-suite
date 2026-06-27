@@ -44,19 +44,19 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/customers", label: "Customers", icon: Users },
-  { to: "/accounts", label: "Accounts", icon: Wallet },
+  { to: "/customers", label: "Clients", icon: Users },
   { to: "/loans", label: "Loans", icon: Banknote },
+  { to: "/accounts", label: "Deposits", icon: Wallet },
+  { to: "/transactions", label: "Loan Transactions", icon: ArrowLeftRight },
   { to: "/arrears", label: "Arrears", icon: AlertTriangle },
   { to: "/collections", label: "Collections", icon: HandCoins },
-  { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { to: "/ledger", label: "Ledger", icon: BookOpen },
-  { to: "/reconciliation", label: "Reconciliation", icon: Scale, requirePrivileged: true },
-  { to: "/reports", label: "Reports", icon: FileBarChart },
-  { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/audit", label: "Activities", icon: ShieldCheck, requirePrivileged: true },
   { to: "/users", label: "Users", icon: UserCog, requireAdmin: true },
-  { to: "/audit", label: "Audit", icon: ShieldCheck, requirePrivileged: true },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/reports", label: "Reporting", icon: FileBarChart },
+  { to: "/ledger", label: "Accounting", icon: BookOpen },
+  { to: "/reconciliation", label: "Reconciliation", icon: Scale, requirePrivileged: true },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/settings", label: "Administration", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

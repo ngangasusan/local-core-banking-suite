@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { fmtKES as _fmtKES } from "@/lib/format";
+import { LatestActivity } from "@/components/dashboard/LatestActivity";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 
 export const Route = createFileRoute("/")({
   component: DashboardPage,

@@ -45,7 +45,7 @@ export function LatestActivity() {
           .limit(6),
         supabase
           .from("transactions")
-          .select("id, amount, transaction_type, created_at, account:accounts!transactions_account_fk(id, account_number, customer:customers!accounts_customer_fk(id, full_name))")
+          .select("id, amount, txn_type, created_at, account:accounts!transactions_account_fk(id, account_number, customer:customers!accounts_customer_fk(id, full_name))")
           .order("created_at", { ascending: false })
           .limit(6),
       ]);

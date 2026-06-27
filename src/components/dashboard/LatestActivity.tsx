@@ -136,7 +136,7 @@ export function LatestActivity() {
           tone: "info",
           nodes: (
             <>
-              {t.transaction_type ?? "Transaction"} of{" "}
+              {t.txn_type ?? "Transaction"} of{" "}
               <span className="font-mono">{Number(t.amount).toLocaleString()}</span> on{" "}
               {a?.id ? (
                 <Link to="/accounts" search={{ focus: a.id } as any} className="text-primary hover:underline font-medium">

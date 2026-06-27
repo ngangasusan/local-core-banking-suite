@@ -33,29 +33,32 @@ export function DashboardSidebar() {
     queryKey: ["dashboard-indicators"],
     refetchInterval: 60_000,
     queryFn: async () => {
-      const [clients, portfolio, active, pending, par30, par7, par90, awaiting, arrears] = await Promise.all([
+      const today = new Date().toISOString().slice(0, 10);
+      const [clients, allLoans, active, pending] = await Promise.all([
         supabase.from("customers").select("*", { count: "exact", head: true }),
-        supabase.from("loans").select("outstanding_balance, status, days_past_due, principal"),
-        supabase.from("customers").select("*", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("loans").select("status, outstanding_balance, principal, due_date"),
+        supabase.from("customers").select("*", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("loans").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("loans").select("*", { count: "exact", head: true }).gt("days_past_due", 30),
-        supabase.from("loans").select("*", { count: "exact", head: true }).gt("days_past_due", 7),
-        supabase.from("loans").select("*", { count: "exact", head: true }).gt("days_past_due", 90),
-        supabase.from("loans").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("loans").select("*", { count: "exact", head: true }).eq("status", "in_arrears"),
       ]);
-      const gross = (portfolio.data ?? []).reduce((s, r) => s + Number(r.outstanding_balance || 0), 0);
-      const pendingDisbursal = (portfolio.data ?? []).filter((r) => r.status === "pending").reduce((s, r) => s + Number(r.principal || 0), 0);
+      const loans = allLoans.data ?? [];
+      const gross = loans.reduce((s, r) => s + Number(r.outstanding_balance || 0), 0);
+      const pendingDisbursal = loans.filter((r) => r.status === "pending").reduce((s, r) => s + Number(r.principal || 0), 0);
+      const dpd = (l: { due_date: string | null; status: string | null; outstanding_balance: number | string }) =>
+        l.due_date && (l.status === "active" || l.status === "in_arrears") && Number(l.outstanding_balance) > 0
+          ? Math.floor((Date.parse(today) - Date.parse(l.due_date)) / 86400000)
+          : 0;
+      const par7 = loans.filter((l) => dpd(l) > 7).length;
+      const par30 = loans.filter((l) => dpd(l) > 30).length;
+      const par90 = loans.filter((l) => dpd(l) > 90).length;
+      const arrears = loans.filter((l) => l.status === "in_arrears").length;
       return {
         clients: clients.count ?? 0,
         gross,
         active: active.count ?? 0,
         pending: pending.count ?? 0,
-        par30: par30.count ?? 0,
-        par7: par7.count ?? 0,
-        par90: par90.count ?? 0,
-        awaiting: awaiting.count ?? 0,
-        arrears: arrears.count ?? 0,
+        par30, par7, par90,
+        awaiting: pending.count ?? 0,
+        arrears,
         pendingDisbursal,
       };
     },

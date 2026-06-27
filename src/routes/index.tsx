@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { fmtKES as _fmtKES } from "@/lib/format";
+import { LatestActivity } from "@/components/dashboard/LatestActivity";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 
 export const Route = createFileRoute("/")({
   component: DashboardPage,
@@ -132,6 +134,13 @@ function DashboardPage() {
           title="Operations Dashboard"
           description="Snapshot of your institution's performance and pipeline."
         />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="lg:col-span-2">
+            <LatestActivity />
+          </div>
+          <DashboardSidebar />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {cards.map(({ label, value, icon: Icon, link }) => (

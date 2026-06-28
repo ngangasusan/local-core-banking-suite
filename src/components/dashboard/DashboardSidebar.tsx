@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Banknote, AlertTriangle, Clock, Wallet, FileBarChart, HandCoins, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { Users, Banknote, AlertTriangle, Clock, Wallet, FileBarChart, HandCoins, ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtKES } from "@/lib/format";
 

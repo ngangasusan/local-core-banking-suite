@@ -579,6 +579,81 @@ export type Database = {
           },
         ]
       }
+      loan_products: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          daily_interest_rate: number
+          description: string | null
+          early_repayment_days: number
+          grace_period_days: number
+          id: string
+          interest_rate: number
+          is_active: boolean
+          late_fee_daily_pct: number
+          max_principal: number
+          max_term_months: number
+          method: Database["public"]["Enums"]["loan_method"]
+          min_principal: number
+          min_principal_pct: number
+          min_term_months: number
+          mpesa_fee_amount: number
+          mpesa_fee_threshold: number
+          name: string
+          required_credit_score: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          daily_interest_rate?: number
+          description?: string | null
+          early_repayment_days?: number
+          grace_period_days?: number
+          id?: string
+          interest_rate?: number
+          is_active?: boolean
+          late_fee_daily_pct?: number
+          max_principal?: number
+          max_term_months?: number
+          method?: Database["public"]["Enums"]["loan_method"]
+          min_principal?: number
+          min_principal_pct?: number
+          min_term_months?: number
+          mpesa_fee_amount?: number
+          mpesa_fee_threshold?: number
+          name: string
+          required_credit_score?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          daily_interest_rate?: number
+          description?: string | null
+          early_repayment_days?: number
+          grace_period_days?: number
+          id?: string
+          interest_rate?: number
+          is_active?: boolean
+          late_fee_daily_pct?: number
+          max_principal?: number
+          max_term_months?: number
+          method?: Database["public"]["Enums"]["loan_method"]
+          min_principal?: number
+          min_principal_pct?: number
+          min_term_months?: number
+          mpesa_fee_amount?: number
+          mpesa_fee_threshold?: number
+          name?: string
+          required_credit_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loan_provisions: {
         Row: {
           computed_at: string
@@ -852,6 +927,7 @@ export type Database = {
           next_payment_date: string | null
           outstanding_balance: number
           principal: number
+          product_id: string | null
           projected_payment_date: string | null
           purpose: string | null
           rejection_reason: string | null
@@ -879,6 +955,7 @@ export type Database = {
           next_payment_date?: string | null
           outstanding_balance?: number
           principal: number
+          product_id?: string | null
           projected_payment_date?: string | null
           purpose?: string | null
           rejection_reason?: string | null
@@ -906,6 +983,7 @@ export type Database = {
           next_payment_date?: string | null
           outstanding_balance?: number
           principal?: number
+          product_id?: string | null
           projected_payment_date?: string | null
           purpose?: string | null
           rejection_reason?: string | null
@@ -942,6 +1020,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "loan_products"
             referencedColumns: ["id"]
           },
           {

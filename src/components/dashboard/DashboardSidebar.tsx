@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Banknote, AlertTriangle, Clock, Wallet, FileBarChart, HandCoins, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { Users, Banknote, AlertTriangle, Clock, Wallet, FileBarChart, HandCoins, ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtKES } from "@/lib/format";
 
@@ -149,11 +150,24 @@ function FavLink({ to, icon: Icon, label }: { to: string; icon: typeof Users; la
 }
 
 function Indicator({ label, value, to }: { label: string; value: string; to: string }) {
+  const [shown, setShown] = useState(false);
   return (
-    <Link to={to} className="border border-border rounded-lg p-3 hover:bg-accent transition-colors block">
+    <div className="border border-border rounded-lg p-3 hover:bg-accent transition-colors block">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground leading-tight min-h-[24px]">{label}</div>
-      <div className="text-base font-semibold mt-1 truncate">{value}</div>
-      <div className="text-[10px] text-primary mt-1">Show →</div>
-    </Link>
+      <div className="text-base font-semibold mt-1 truncate" aria-hidden={!shown}>
+        {shown ? value : <span className="tracking-widest text-muted-foreground">••••</span>}
+      </div>
+      <div className="flex items-center justify-between mt-1">
+        <button
+          type="button"
+          onClick={() => setShown((s) => !s)}
+          className="text-[10px] text-primary inline-flex items-center gap-1 hover:underline"
+          aria-label={shown ? `Hide ${label}` : `Show ${label}`}
+        >
+          {shown ? <><EyeOff className="h-3 w-3" /> Hide</> : <><Eye className="h-3 w-3" /> Show</>}
+        </button>
+        <Link to={to} className="text-[10px] text-primary hover:underline">Open →</Link>
+      </div>
+    </div>
   );
 }

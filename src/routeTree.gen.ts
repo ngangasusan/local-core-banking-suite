@@ -16,6 +16,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ReconciliationRouteImport } from './routes/reconciliation'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoansRouteImport } from './routes/loans'
+import { Route as LoanProductsRouteImport } from './routes/loan-products'
 import { Route as LedgerRouteImport } from './routes/ledger'
 import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as CollectionsRouteImport } from './routes/collections'
@@ -59,6 +60,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
 const LoansRoute = LoansRouteImport.update({
   id: '/loans',
   path: '/loans',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoanProductsRoute = LoanProductsRouteImport.update({
+  id: '/loan-products',
+  path: '/loan-products',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LedgerRoute = LedgerRouteImport.update({
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/collections': typeof CollectionsRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
+  '/loan-products': typeof LoanProductsRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/reconciliation': typeof ReconciliationRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/collections': typeof CollectionsRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
+  '/loan-products': typeof LoanProductsRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/reconciliation': typeof ReconciliationRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/collections': typeof CollectionsRoute
   '/customers': typeof CustomersRoute
   '/ledger': typeof LedgerRoute
+  '/loan-products': typeof LoanProductsRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/reconciliation': typeof ReconciliationRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/customers'
     | '/ledger'
+    | '/loan-products'
     | '/loans'
     | '/notifications'
     | '/reconciliation'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/customers'
     | '/ledger'
+    | '/loan-products'
     | '/loans'
     | '/notifications'
     | '/reconciliation'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/customers'
     | '/ledger'
+    | '/loan-products'
     | '/loans'
     | '/notifications'
     | '/reconciliation'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   CollectionsRoute: typeof CollectionsRoute
   CustomersRoute: typeof CustomersRoute
   LedgerRoute: typeof LedgerRoute
+  LoanProductsRoute: typeof LoanProductsRoute
   LoansRoute: typeof LoansRoute
   NotificationsRoute: typeof NotificationsRoute
   ReconciliationRoute: typeof ReconciliationRoute
@@ -288,6 +301,13 @@ declare module '@tanstack/react-router' {
       path: '/loans'
       fullPath: '/loans'
       preLoaderRoute: typeof LoansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loan-products': {
+      id: '/loan-products'
+      path: '/loan-products'
+      fullPath: '/loan-products'
+      preLoaderRoute: typeof LoanProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ledger': {
@@ -365,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   CollectionsRoute: CollectionsRoute,
   CustomersRoute: CustomersRoute,
   LedgerRoute: LedgerRoute,
+  LoanProductsRoute: LoanProductsRoute,
   LoansRoute: LoansRoute,
   NotificationsRoute: NotificationsRoute,
   ReconciliationRoute: ReconciliationRoute,
@@ -377,12 +398,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

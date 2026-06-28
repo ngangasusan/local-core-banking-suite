@@ -134,7 +134,6 @@ function LoanProductsPage() {
       <PageHeader
         title="Loan Products"
         description="Define loan categories with their own limits, rates, fees, and rules. Products are referenced when creating loans."
-        icon={Scale}
         actions={
           canManage ? (
             <Button onClick={startNew}><Plus className="h-4 w-4 mr-2" /> New Product</Button>

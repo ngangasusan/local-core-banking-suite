@@ -174,7 +174,7 @@ function UsersTab() {
               <td className="px-4 py-3">
                 <div className="flex flex-wrap gap-1">
                   {u.roles.length === 0 && <span className="text-xs text-muted-foreground">no roles</span>}
-                  {u.roles.map((r: string) => (
+                  {u.roles.map((r: AppRole) => (
                     <Badge key={r} variant="secondary" className="capitalize cursor-pointer" onClick={() => removeRole.mutate({ userId: u.id, role: r })} title="Click to remove">
                       {r.replace("_", " ")} ✕
                     </Badge>

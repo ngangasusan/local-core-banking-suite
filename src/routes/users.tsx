@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { sql } from "@/lib/sql-client";
+import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,8 @@ function CreateUserDialog() {
         role,
       };
       if (payload.password.length < 8) throw new Error("Password must be at least 8 characters");
-      const { data, error } = await sql.functions.invoke("admin-create-user", { body: payload });
+      const data = await api.post<{ id: string }>("/auth/users", payload);
+      const error = null as { message?: string } | null;
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
     },

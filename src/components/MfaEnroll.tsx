@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ export function MfaEnroll() {
   const [busy, setBusy] = useState(false);
 
   const refresh = async () => {
-    const { data } = await supabase.auth.mfa.listFactors();
+    const { data } = await sql.auth.mfa.listFactors();
     setFactors([...(data?.totp ?? [])] as Factor[]);
   };
   useEffect(() => { refresh(); }, []);
@@ -25,7 +25,7 @@ export function MfaEnroll() {
 
   const startEnroll = async () => {
     setBusy(true);
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `Authenticator ${Date.now()}` });
+    const { data, error } = await sql.auth.mfa.enroll({ factorType: "totp", friendlyName: `Authenticator ${Date.now()}` });
     setBusy(false);
     if (error) return toast.error(error.message);
     if (data) setEnrolling({ id: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
@@ -34,9 +34,9 @@ export function MfaEnroll() {
   const finishEnroll = async () => {
     if (!enrolling) return;
     setBusy(true);
-    const { data: chal, error: cerr } = await supabase.auth.mfa.challenge({ factorId: enrolling.id });
+    const { data: chal, error: cerr } = await sql.auth.mfa.challenge({ factorId: enrolling.id });
     if (cerr || !chal) { setBusy(false); return toast.error(cerr?.message ?? "Challenge failed"); }
-    const { error } = await supabase.auth.mfa.verify({ factorId: enrolling.id, challengeId: chal.id, code });
+    const { error } = await sql.auth.mfa.verify({ factorId: enrolling.id, challengeId: chal.id, code });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("MFA enabled");
@@ -44,7 +44,7 @@ export function MfaEnroll() {
   };
 
   const removeFactor = async (id: string) => {
-    const { error } = await supabase.auth.mfa.unenroll({ factorId: id });
+    const { error } = await sql.auth.mfa.unenroll({ factorId: id });
     if (error) return toast.error(error.message);
     toast.success("Factor removed"); refresh();
   };

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,7 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     enabled: !!user,
     refetchInterval: 30000,
     queryFn: async () => {
-      const { count } = await supabase
+      const { count } = await sql
         .from("notifications")
         .select("*", { count: "exact", head: true })
         .eq("is_read", false);

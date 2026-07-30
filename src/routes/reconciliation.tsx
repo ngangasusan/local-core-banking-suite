@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Scale, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { fmtKES as _fmtKES } from "@/lib/format";
@@ -36,7 +36,7 @@ function ReconciliationPage() {
     enabled: !!user && isPrivileged,
     queryFn: async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).from("daily_recon").select("*").limit(60);
+      const { data, error } = await (sql as any).from("daily_recon").select("*").limit(60);
       if (error) throw error;
       return (data ?? []) as Row[];
     },

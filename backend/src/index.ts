@@ -25,6 +25,9 @@ import provisionsRoutes from "./routes/provisions.routes.js";
 import notificationsRoutes from "./routes/notifications.routes.js";
 import reconciliationRoutes from "./routes/reconciliation.routes.js";
 import reportsRoutes from "./routes/reports.routes.js";
+import dataRoutes from "./routes/data.routes.js";
+import rpcRoutes from "./routes/rpc.routes.js";
+import filesRoutes from "./routes/files.routes.js";
 import { startWorker } from "./services/worker.js";
 
 const log = pino({ level: env.NODE_ENV === "production" ? "info" : "debug" });
@@ -68,6 +71,9 @@ app.use("/provisions", provisionsRoutes);
 app.use("/notifications", notificationsRoutes);
 app.use("/reconciliation", reconciliationRoutes);
 app.use("/reports", reportsRoutes);
+app.use("/data", dataRoutes);
+app.use("/rpc", rpcRoutes);
+app.use("/files", filesRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: "not_found" }));

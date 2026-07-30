@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ function AccountsPage() {
     queryKey: ["accounts"],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sql
         .from("accounts")
         .select("*, customer:customers!accounts_customer_fk(full_name, customer_number)")
         .order("created_at", { ascending: false })
@@ -48,7 +48,7 @@ function AccountsPage() {
     queryKey: ["customers-min"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("customers").select("id, full_name, customer_number").order("full_name");
+      const { data } = await sql.from("customers").select("id, full_name, customer_number").order("full_name");
       return data ?? [];
     },
   });
@@ -57,7 +57,7 @@ function AccountsPage() {
     mutationFn: async (fd: FormData) => {
       const data = Object.fromEntries(fd.entries()) as Record<string, string>;
       const account_number = "A" + Date.now().toString().slice(-10);
-      const { error } = await supabase.from("accounts").insert({
+      const { error } = await sql.from("accounts").insert({
         account_number,
         customer_id: data.customer_id,
         account_type: data.account_type as "savings" | "current" | "fixed_deposit" | "loan",

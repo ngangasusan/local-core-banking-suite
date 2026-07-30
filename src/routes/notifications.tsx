@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ function NotificationsPage() {
     queryKey: ["notifications"],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sql
         .from("notifications").select("*").order("created_at", { ascending: false }).limit(200);
       if (error) throw error;
       return data;
@@ -33,7 +33,7 @@ function NotificationsPage() {
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+      await sql.from("notifications").update({ is_read: true }).eq("id", id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notifications"] });
@@ -43,7 +43,7 @@ function NotificationsPage() {
 
   const markAll = useMutation({
     mutationFn: async () => {
-      await supabase.from("notifications").update({ is_read: true }).eq("is_read", false);
+      await sql.from("notifications").update({ is_read: true }).eq("is_read", false);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notifications"] });

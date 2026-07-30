@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
@@ -20,7 +20,7 @@ export function KycUpload({ customerId }: { customerId: string }) {
   const { data: docs = [] } = useQuery({
     queryKey: ["kyc", customerId],
     queryFn: async () => {
-      const { data } = await supabase.from("kyc_documents").select("*").eq("customer_id", customerId).order("uploaded_at", { ascending: false });
+      const { data } = await sql.from("kyc_documents").select("*").eq("customer_id", customerId).order("uploaded_at", { ascending: false });
       return data ?? [];
     },
   });
@@ -28,9 +28,9 @@ export function KycUpload({ customerId }: { customerId: string }) {
   const upload = useMutation({
     mutationFn: async (file: File) => {
       const path = `${customerId}/${Date.now()}_${file.name}`;
-      const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, file);
+      const { error: upErr } = await sql.storage.from("kyc-documents").upload(path, file);
       if (upErr) throw upErr;
-      const { error } = await supabase.from("kyc_documents").insert({
+      const { error } = await sql.from("kyc_documents").insert({
         customer_id: customerId, doc_type: docType, storage_path: path, is_id_document: isId, uploaded_by: user!.id,
       });
       if (error) throw error;
@@ -41,8 +41,8 @@ export function KycUpload({ customerId }: { customerId: string }) {
 
   const del = useMutation({
     mutationFn: async (d: { id: string; storage_path: string }) => {
-      await supabase.storage.from("kyc-documents").remove([d.storage_path]);
-      const { error } = await supabase.from("kyc_documents").delete().eq("id", d.id);
+      await sql.storage.from("kyc-documents").remove([d.storage_path]);
+      const { error } = await sql.from("kyc_documents").delete().eq("id", d.id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["kyc", customerId] }); },
@@ -50,7 +50,7 @@ export function KycUpload({ customerId }: { customerId: string }) {
   });
 
   const view = async (path: string) => {
-    const { data } = await supabase.storage.from("kyc-documents").createSignedUrl(path, 60);
+    const { data } = await sql.storage.from("kyc-documents").createSignedUrl(path, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Users, Banknote, AlertTriangle, Clock, Wallet, FileBarChart, HandCoins, ShieldAlert, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { fmtKES } from "@/lib/format";
 
 export function DashboardSidebar() {
@@ -13,7 +13,7 @@ export function DashboardSidebar() {
       const today = new Date();
       const todayStr = today.toISOString().slice(0, 10);
       const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-      const { data } = await supabase
+      const { data } = await sql
         .from("loans")
         .select("id, due_date, status, outstanding_balance")
         .in("status", ["active", "in_arrears"])
@@ -36,10 +36,10 @@ export function DashboardSidebar() {
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
       const [clients, allLoans, active, pending] = await Promise.all([
-        supabase.from("customers").select("*", { count: "exact", head: true }),
-        supabase.from("loans").select("status, outstanding_balance, principal, due_date"),
-        supabase.from("customers").select("*", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("loans").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        sql.from("customers").select("*", { count: "exact", head: true }),
+        sql.from("loans").select("status, outstanding_balance, principal, due_date"),
+        sql.from("customers").select("*", { count: "exact", head: true }).eq("is_active", true),
+        sql.from("loans").select("*", { count: "exact", head: true }).eq("status", "pending"),
       ]);
       const loans = allLoans.data ?? [];
       const gross = loans.reduce((s, r) => s + Number(r.outstanding_balance || 0), 0);

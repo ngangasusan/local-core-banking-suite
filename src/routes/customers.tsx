@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,7 @@ function CustomersPage() {
     queryKey: ["customers", search],
     enabled: !!user,
     queryFn: async () => {
-      let q = supabase.from("customers").select("*").order("created_at", { ascending: false }).limit(100);
+      let q = sql.from("customers").select("*").order("created_at", { ascending: false }).limit(100);
       if (search) q = q.or(`full_name.ilike.%${search}%,customer_number.ilike.%${search}%,phone.ilike.%${search}%`);
       const { data, error } = await q;
       if (error) throw error;
@@ -86,7 +86,7 @@ function CustomersPage() {
       // Pre-check duplicates for friendly messaging (national_id and phone are unique)
       const orParts = [`national_id.eq.${parsed.national_id}`];
       if (parsed.phone) orParts.push(`phone.eq.${parsed.phone}`);
-      const { data: existing } = await supabase
+      const { data: existing } = await sql
         .from("customers")
         .select("id, full_name, customer_number, national_id, phone")
         .or(orParts.join(","))
@@ -98,7 +98,7 @@ function CustomersPage() {
       }
 
       const customer_number = "C" + Date.now().toString().slice(-9);
-      const { data: inserted, error } = await supabase.from("customers").insert({
+      const { data: inserted, error } = await sql.from("customers").insert({
         customer_number,
         full_name: parsed.full_name,
         customer_type: parsed.customer_type,
@@ -119,9 +119,9 @@ function CustomersPage() {
 
       // Upload ID document
       const path = `${inserted.id}/${Date.now()}_${idFile.name}`;
-      const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, idFile);
+      const { error: upErr } = await sql.storage.from("kyc-documents").upload(path, idFile);
       if (upErr) throw upErr;
-      await supabase.from("kyc_documents").insert({
+      await sql.from("kyc_documents").insert({
         customer_id: inserted.id,
         doc_type: "National ID",
         storage_path: path,
@@ -131,7 +131,7 @@ function CustomersPage() {
 
       // Optional guarantor
       if (parsed.g_full_name && parsed.g_national_id && parsed.g_phone) {
-        const { error: gErr } = await supabase.from("guarantors").insert({
+        const { error: gErr } = await sql.from("guarantors").insert({
           customer_id: inserted.id,
           full_name: parsed.g_full_name,
           national_id: parsed.g_national_id,
@@ -158,7 +158,7 @@ function CustomersPage() {
 
   const updateKyc = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "verified" | "rejected" | "pending" }) => {
-      const { error } = await supabase.from("customers").update({ kyc_status: status }).eq("id", id);
+      const { error } = await sql.from("customers").update({ kyc_status: status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -170,7 +170,7 @@ function CustomersPage() {
 
   const deleteCustomer = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("customers").delete().eq("id", id);
+      const { error } = await sql.from("customers").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -356,7 +356,7 @@ function CustomerEditDialog({ customer, open, onOpenChange }: { customer: Custom
   const update = useMutation({
     mutationFn: async (fd: FormData) => {
       const d = Object.fromEntries(fd.entries()) as Record<string, string>;
-      const { error } = await supabase.from("customers").update({
+      const { error } = await sql.from("customers").update({
         full_name: d.full_name, phone: d.phone || null, email: d.email || null,
         address: d.address || null, city: d.city || null, occupation: d.occupation || null,
         national_id: d.national_id || null,

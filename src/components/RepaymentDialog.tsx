@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { useAuth } from "@/lib/auth";
 import { computeInterest, computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 import { toast } from "sonner";
@@ -43,11 +43,11 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
       if (numAmount <= 0) throw new Error("Amount must be positive");
       if (numAmount > remainingToSettle + 0.01) throw new Error("Amount exceeds total payable");
       const reference = "RP" + Date.now().toString().slice(-9);
-      const { error: rerr } = await supabase.from("loan_repayments").insert({
+      const { error: rerr } = await sql.from("loan_repayments").insert({
         loan_id: loan.id, amount: numAmount, reference, posted_by: user!.id,
       });
       if (rerr) throw rerr;
-      await supabase.from("transactions").insert({
+      await sql.from("transactions").insert({
         reference, txn_type: "loan_repayment", amount: numAmount,
         description: `Repayment for ${loan.loan_number}${rollover ? " (interest only — rolling over principal)" : ""}`,
         performed_by: user!.id,
@@ -58,7 +58,7 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
       // Rollover: create a new loan with same principal, fresh 30-day term.
       if (rollover) {
         const newNumber = "L" + Date.now().toString().slice(-9);
-        const { error: lerr } = await supabase.from("loans").insert({
+        const { error: lerr } = await sql.from("loans").insert({
           loan_number: newNumber,
           customer_id: loan.customer_id,
           principal: loan.principal,
@@ -74,9 +74,9 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
         });
         if (lerr) throw lerr;
         // Auto-disburse the rolled-over loan (trigger sets due_date and activates).
-        const { data: created } = await supabase.from("loans").select("id").eq("loan_number", newNumber).single();
+        const { data: created } = await sql.from("loans").select("id").eq("loan_number", newNumber).single();
         if (created) {
-          await supabase.from("loans").update({ status: "disbursed" }).eq("id", created.id);
+          await sql.from("loans").update({ status: "disbursed" }).eq("id", created.id);
         }
       }
     },

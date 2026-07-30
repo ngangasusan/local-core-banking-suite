@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ function ReportsPage() {
     queryKey: ["report-loans"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("loans").select("*, customer:customers!loans_customer_fk(full_name)");
+      const { data } = await sql.from("loans").select("*, customer:customers!loans_customer_fk(full_name)");
       return data ?? [];
     },
   });

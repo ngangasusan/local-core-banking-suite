@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Search, Users, Banknote, Wallet, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 
 type Hit = {
   group: "Customers" | "Loans" | "Accounts";
@@ -54,17 +54,17 @@ export function GlobalSearch() {
       try {
         const like = `%${term}%`;
         const [customersRes, loansRes, accountsRes] = await Promise.all([
-          supabase
+          sql
             .from("customers")
             .select("id, full_name, national_id, phone")
             .or(`full_name.ilike.${like},national_id.ilike.${like},phone.ilike.${like}`)
             .limit(6),
-          supabase
+          sql
             .from("loans")
             .select("id, loan_number, principal, status, customer:customers!loans_customer_fk(full_name)")
             .ilike("loan_number", like)
             .limit(6),
-          supabase
+          sql
             .from("accounts")
             .select("id, account_number, account_type, customer:customers!accounts_customer_fk(full_name)")
             .ilike("account_number", like)

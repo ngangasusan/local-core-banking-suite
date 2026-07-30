@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { fmtKES as _fmtKES } from "@/lib/format";
@@ -23,9 +23,9 @@ function LedgerPage() {
     enabled: !!user,
     queryFn: async () => {
       const [a, l, t] = await Promise.all([
-        supabase.from("accounts").select("balance"),
-        supabase.from("loans").select("outstanding_balance,status"),
-        supabase.from("transactions").select("amount,txn_type"),
+        sql.from("accounts").select("balance"),
+        sql.from("loans").select("outstanding_balance,status"),
+        sql.from("transactions").select("amount,txn_type"),
       ]);
       const customerDeposits = (a.data ?? []).reduce((s, r) => s + Number(r.balance || 0), 0);
       const loansReceivable = (l.data ?? [])

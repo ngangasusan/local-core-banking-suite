@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ function LoansPage() {
     queryKey: ["loans"],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sql
         .from("loans")
         .select("*, customer:customers!loans_customer_fk(full_name, customer_number)")
         .order("created_at", { ascending: false })
@@ -52,7 +52,7 @@ function LoansPage() {
     queryKey: ["customers-min"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("customers").select("id, full_name, customer_number, credit_score").eq("is_active", true).order("full_name");
+      const { data } = await sql.from("customers").select("id, full_name, customer_number, credit_score").eq("is_active", true).order("full_name");
       return data ?? [];
     },
   });
@@ -62,8 +62,8 @@ function LoansPage() {
     enabled: !!selectedCustomer,
     queryFn: async () => {
       const [{ data: cust }, { data: qualified }] = await Promise.all([
-        supabase.from("customers").select("credit_score, monthly_income").eq("id", selectedCustomer).maybeSingle(),
-        supabase.rpc("qualified_loan_amount", { _customer_id: selectedCustomer }),
+        sql.from("customers").select("credit_score, monthly_income").eq("id", selectedCustomer).maybeSingle(),
+        sql.rpc("qualified_loan_amount", { _customer_id: selectedCustomer }),
       ]);
       return {
         credit_score: cust?.credit_score ?? 650,
@@ -78,7 +78,7 @@ function LoansPage() {
       const d = Object.fromEntries(fd.entries()) as Record<string, string>;
       const principal = Number(d.principal);
       const loan_number = "L" + Date.now().toString().slice(-9);
-      const { error } = await supabase.from("loans").insert({
+      const { error } = await sql.from("loans").insert({
         loan_number,
         customer_id: d.customer_id,
         principal,
@@ -99,7 +99,7 @@ function LoansPage() {
 
   const submit = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("loans").update({ status: "pending", submitted_for_approval_at: new Date().toISOString() }).eq("id", id);
+      const { error } = await sql.from("loans").update({ status: "pending", submitted_for_approval_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Submitted for approval"); qc.invalidateQueries({ queryKey: ["loans"] }); },
@@ -108,7 +108,7 @@ function LoansPage() {
 
   const approve = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("loans").update({ status: "approved", approved_by: user!.id }).eq("id", id);
+      const { error } = await sql.from("loans").update({ status: "approved", approved_by: user!.id }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Loan approved"); qc.invalidateQueries({ queryKey: ["loans"] }); },
@@ -117,7 +117,7 @@ function LoansPage() {
 
   const reject = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const { error } = await supabase.from("loans").update({ status: "rejected", rejection_reason: reason, approved_by: user!.id }).eq("id", id);
+      const { error } = await sql.from("loans").update({ status: "rejected", rejection_reason: reason, approved_by: user!.id }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Loan rejected"); qc.invalidateQueries({ queryKey: ["loans"] }); setRejectFor(null); },
@@ -127,7 +127,7 @@ function LoansPage() {
   const disburse = useMutation({
     mutationFn: async (id: string) => {
       // Trigger sets due_date, auto-activates, and posts the disbursement journal entry.
-      const { error } = await supabase.from("loans").update({ status: "disbursed" }).eq("id", id);
+      const { error } = await sql.from("loans").update({ status: "disbursed" }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Loan disbursed"); qc.invalidateQueries({ queryKey: ["loans"] }); qc.invalidateQueries({ queryKey: ["dashboard-stats"] }); },

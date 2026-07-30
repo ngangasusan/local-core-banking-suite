@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ function TxnPage() {
     queryKey: ["transactions"],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sql
         .from("transactions")
         .select("*, account:accounts!transactions_account_fk(account_number, customer:customers!accounts_customer_fk(full_name))")
         .order("created_at", { ascending: false })
@@ -49,7 +49,7 @@ function TxnPage() {
     queryKey: ["accounts-min"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("accounts").select("id, account_number, balance, customer:customers!accounts_customer_fk(full_name)").eq("status", "active");
+      const { data } = await sql.from("accounts").select("id, account_number, balance, customer:customers!accounts_customer_fk(full_name)").eq("status", "active");
       return data ?? [];
     },
   });
@@ -58,7 +58,7 @@ function TxnPage() {
     queryKey: ["loans-active-min"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("loans")
         .select("id, loan_number, outstanding_balance, customer:customers!loans_customer_fk(full_name)")
         .in("status", ["active", "in_arrears"])
@@ -81,22 +81,22 @@ function TxnPage() {
         if (!loan) throw new Error("Select a loan");
         if (amount > Number(loan.outstanding_balance)) throw new Error("Amount exceeds outstanding balance");
         const ref = "RP" + Date.now().toString().slice(-9);
-        const { error: rerr } = await supabase.from("loan_repayments").insert({
+        const { error: rerr } = await sql.from("loan_repayments").insert({
           loan_id: d.loan_id, amount, reference: ref, posted_by: user!.id,
         });
         if (rerr) throw rerr;
-        const { error: terr } = await supabase.from("transactions").insert({
+        const { error: terr } = await sql.from("transactions").insert({
           reference: ref, txn_type: "loan_repayment", amount,
           description: d.description || `Repayment for ${loan.loan_number}`,
           performed_by: user!.id,
         });
         if (terr) throw terr;
         // GL: Cash Dr / Loans Receivable Cr
-        const { data: coa } = await supabase.from("chart_of_accounts").select("id, code").in("code", ["1000", "1100"]);
+        const { data: coa } = await sql.from("chart_of_accounts").select("id, code").in("code", ["1000", "1100"]);
         const cash = coa?.find((c) => c.code === "1000")?.id;
         const loanRec = coa?.find((c) => c.code === "1100")?.id;
         if (cash && loanRec) {
-          await supabase.from("journal_entries").insert({
+          await sql.from("journal_entries").insert({
             reference: ref, description: `Repayment ${loan.loan_number}`,
             debit_account: cash, credit_account: loanRec, amount,
             source_table: "loan_repayments", source_id: null, created_by: user!.id,
@@ -116,7 +116,7 @@ function TxnPage() {
       }
 
       // Update primary account
-      const { error: u1 } = await supabase.from("accounts").update({ balance: newBal }).eq("id", d.account_id);
+      const { error: u1 } = await sql.from("accounts").update({ balance: newBal }).eq("id", d.account_id);
       if (u1) throw u1;
 
       // Transfer: update counterparty
@@ -125,12 +125,12 @@ function TxnPage() {
         const counter = accounts.find((a) => a.id === d.counterparty_account_id);
         if (!counter) throw new Error("Destination account not found");
         if (curBal < amount) throw new Error("Insufficient balance");
-        await supabase.from("accounts").update({ balance: curBal - amount }).eq("id", d.account_id);
-        await supabase.from("accounts").update({ balance: Number(counter.balance) + amount }).eq("id", d.counterparty_account_id);
+        await sql.from("accounts").update({ balance: curBal - amount }).eq("id", d.account_id);
+        await sql.from("accounts").update({ balance: Number(counter.balance) + amount }).eq("id", d.counterparty_account_id);
         counterparty_account_id = d.counterparty_account_id;
       }
 
-      const { error } = await supabase.from("transactions").insert({
+      const { error } = await sql.from("transactions").insert({
         reference,
         txn_type: type,
         amount,

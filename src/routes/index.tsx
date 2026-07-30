@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Wallet, Banknote, ArrowLeftRight, TrendingUp, AlertTriangle, CalendarClock } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { fmtKES as _fmtKES } from "@/lib/format";
@@ -27,10 +27,10 @@ function DashboardPage() {
     enabled: !!user,
     queryFn: async () => {
       const [c, a, l, t] = await Promise.all([
-        supabase.from("customers").select("*", { count: "exact", head: true }),
-        supabase.from("accounts").select("balance"),
-        supabase.from("loan_portfolio").select("outstanding_balance,status"),
-        supabase.from("transactions").select("amount,created_at").gte("created_at", new Date(Date.now() - 86400000).toISOString()),
+        sql.from("customers").select("*", { count: "exact", head: true }),
+        sql.from("accounts").select("balance"),
+        sql.from("loan_portfolio").select("outstanding_balance,status"),
+        sql.from("transactions").select("amount,created_at").gte("created_at", new Date(Date.now() - 86400000).toISOString()),
       ]);
       const totalDeposits = (a.data ?? []).reduce((s, r) => s + Number(r.balance || 0), 0);
       const portfolio = (l.data ?? []).reduce((s, r) => s + Number(r.outstanding_balance || 0), 0);
@@ -54,7 +54,7 @@ function DashboardPage() {
       const today = new Date();
       const inWeek = new Date(Date.now() + 7 * 86400000);
       const fmt = (d: Date) => d.toISOString().slice(0, 10);
-      const { data } = await supabase
+      const { data } = await sql
         .from("loans")
         .select("id, loan_number, due_date, outstanding_balance, status, customer:customers!loans_customer_fk(full_name)")
         .in("status", ["active", "in_arrears"])
@@ -74,7 +74,7 @@ function DashboardPage() {
     queryKey: ["disbursements-by-year-month"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("loans")
         .select("principal, disbursement_date, disbursed_at")
         .not("disbursement_date", "is", null);
@@ -107,7 +107,7 @@ function DashboardPage() {
     queryKey: ["loan-provisions-summary"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("loan_provisions").select("stage, exposure, ecl_amount");
+      const { data } = await sql.from("loan_provisions").select("stage, exposure, ecl_amount");
       const buckets = { 1: { ead: 0, ecl: 0, n: 0 }, 2: { ead: 0, ecl: 0, n: 0 }, 3: { ead: 0, ecl: 0, n: 0 } } as Record<number, { ead: number; ecl: number; n: number }>;
       for (const r of data ?? []) {
         const s = Number(r.stage);

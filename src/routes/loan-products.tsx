@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Scale } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,7 @@ function LoanProductsPage() {
     queryKey: ["loan-products"],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sql
         .from("loan_products" as any).select("*").order("name");
       if (error) throw error;
       return data as any[];
@@ -86,10 +86,10 @@ function LoanProductsPage() {
       const payload = { ...p };
       if (p.id) {
         const { id, ...rest } = payload;
-        const { error } = await supabase.from("loan_products" as any).update(rest).eq("id", id);
+        const { error } = await sql.from("loan_products" as any).update(rest).eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("loan_products" as any).insert({ ...payload, created_by: user?.id });
+        const { error } = await sql.from("loan_products" as any).insert({ ...payload, created_by: user?.id });
         if (error) throw error;
       }
     },
@@ -104,7 +104,7 @@ function LoanProductsPage() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("loan_products" as any).delete().eq("id", id);
+      const { error } = await sql.from("loan_products" as any).delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

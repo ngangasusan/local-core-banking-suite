@@ -21,7 +21,7 @@ function toError(e: unknown): SqlError {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-class QueryBuilder<T = any> implements PromiseLike<SqlResult<T>> {
+class QueryBuilder<T = any[]> implements PromiseLike<SqlResult<T>> {
   private filters: string[][] = [];
   private orders: string[] = [];
   private selectStr = "*";
@@ -169,7 +169,7 @@ function bucket(name: string) {
 
 export const sql = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (table: string) => new QueryBuilder<any>(table),
+  from: (table: string) => new QueryBuilder<any[]>(table),
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async rpc<T = any>(name: string, args?: Row): Promise<{ data: T | null; error: SqlError }> {

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ function CollectionsPage() {
     queryKey: ["collections-worklist"],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sql
         .from("collections_worklist")
         .select("*")
         .order("dpd", { ascending: false })
@@ -95,7 +95,7 @@ function CollectionsPage() {
 
   const sweepBroken = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc("sweep_broken_promises");
+      const { error } = await sql.rpc("sweep_broken_promises");
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Promises swept"); qc.invalidateQueries({ queryKey: ["collections-worklist"] }); },
@@ -247,7 +247,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
     queryKey: ["collection-actions", row?.loan_id],
     enabled: !!row,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("collection_actions").select("*")
         .eq("loan_id", row!.loan_id).order("performed_at", { ascending: false }).limit(50);
       return data ?? [];
@@ -258,7 +258,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
     queryKey: ["promises", row?.loan_id],
     enabled: !!row,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("promises_to_pay").select("*")
         .eq("loan_id", row!.loan_id).order("created_at", { ascending: false }).limit(50);
       return data ?? [];
@@ -269,7 +269,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
     queryKey: ["restructures", row?.loan_id],
     enabled: !!row,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("loan_restructures").select("*")
         .eq("loan_id", row!.loan_id).order("created_at", { ascending: false }).limit(20);
       return data ?? [];
@@ -280,7 +280,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
     queryKey: ["writeoffs", row?.loan_id],
     enabled: !!row,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("loan_writeoffs").select("*")
         .eq("loan_id", row!.loan_id).order("created_at", { ascending: false }).limit(20);
       return data ?? [];
@@ -291,10 +291,10 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
     queryKey: ["loan-guarantors", row?.customer_id, row?.loan_id],
     enabled: !!row,
     queryFn: async () => {
-      const { data: g } = await supabase
+      const { data: g } = await sql
         .from("guarantors").select("id, full_name, phone, relationship")
         .eq("customer_id", row!.customer_id);
-      const { data: f } = await supabase
+      const { data: f } = await sql
         .from("guarantor_followups").select("*").eq("loan_id", row!.loan_id);
       return (g ?? []).map((x) => ({ ...x, followup: (f ?? []).find((y) => y.guarantor_id === x.id) ?? null }));
     },
@@ -311,8 +311,8 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
 
   const logAction = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("collection_actions").insert({
+      const { data: { user } } = await sql.auth.getUser();
+      const { error } = await sql.from("collection_actions").insert({
         loan_id: row!.loan_id, customer_id: row!.customer_id,
         channel: channel as any, outcome: outcome as any,
         notes: notes || null, next_action_at: nextAction || null,
@@ -326,10 +326,10 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
 
   const recordPtp = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await sql.auth.getUser();
       const amt = Number(ptpAmount);
       if (!amt || !ptpDate) throw new Error("Amount and date required");
-      const { error } = await supabase.from("promises_to_pay").insert({
+      const { error } = await sql.from("promises_to_pay").insert({
         loan_id: row!.loan_id, customer_id: row!.customer_id,
         promised_amount: amt, promised_date: ptpDate,
         recorded_by: user?.id ?? null,
@@ -342,7 +342,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
 
   const cancelPtp = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("promises_to_pay")
+      const { error } = await sql.from("promises_to_pay")
         .update({ status: "cancelled", resolved_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
     },
@@ -352,9 +352,9 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
 
   const requestRestructure = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await sql.auth.getUser();
       if (!rsReason || !rsDate) throw new Error("Reason and new due date required");
-      const { error } = await supabase.from("loan_restructures").insert({
+      const { error } = await sql.from("loan_restructures").insert({
         loan_id: row!.loan_id, reason: rsReason, new_due_date: rsDate, requested_by: user?.id ?? null,
       });
       if (error) throw error;
@@ -365,7 +365,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
 
   const approveRestruct = useMutation({
     mutationFn: async ({ id, approve }: { id: string; approve: boolean }) => {
-      const { error } = await supabase.rpc("approve_loan_restructure", { _id: id, _approve: approve });
+      const { error } = await sql.rpc("approve_loan_restructure", { _id: id, _approve: approve });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Updated"); invalidateAll(); },
@@ -374,10 +374,10 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
 
   const requestWriteoff = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await sql.auth.getUser();
       const amt = Number(woAmount);
       if (!amt || !woReason) throw new Error("Amount and reason required");
-      const { error } = await supabase.from("loan_writeoffs").insert({
+      const { error } = await sql.from("loan_writeoffs").insert({
         loan_id: row!.loan_id, amount: amt, reason: woReason, requested_by: user?.id ?? null,
       });
       if (error) throw error;
@@ -388,7 +388,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
 
   const approveWriteoff = useMutation({
     mutationFn: async ({ id, approve }: { id: string; approve: boolean }) => {
-      const { error } = await supabase.rpc("approve_loan_writeoff", { _id: id, _approve: approve });
+      const { error } = await sql.rpc("approve_loan_writeoff", { _id: id, _approve: approve });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Updated"); invalidateAll(); },
@@ -397,15 +397,15 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
 
   const upsertGuarantorFollowup = useMutation({
     mutationFn: async ({ guarantor_id, status, notes }: { guarantor_id: string; status: string; notes?: string }) => {
-      const { data: existing } = await supabase
+      const { data: existing } = await sql
         .from("guarantor_followups").select("id")
         .eq("loan_id", row!.loan_id).eq("guarantor_id", guarantor_id).maybeSingle();
       const payload: any = { status, notes: notes || null, contacted_at: new Date().toISOString() };
       if (existing) {
-        const { error } = await supabase.from("guarantor_followups").update(payload).eq("id", existing.id);
+        const { error } = await sql.from("guarantor_followups").update(payload).eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("guarantor_followups").insert({
+        const { error } = await sql.from("guarantor_followups").insert({
           loan_id: row!.loan_id, guarantor_id, ...payload,
         });
         if (error) throw error;

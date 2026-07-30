@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ function AuditPage() {
     queryKey: ["audit-log", table],
     enabled: !!user && isPrivileged,
     queryFn: async () => {
-      let q = supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(500);
+      let q = sql.from("audit_log").select("*").order("created_at", { ascending: false }).limit(500);
       if (table !== "all") q = q.eq("table_name", table);
       const { data, error } = await q;
       if (error) throw error;
@@ -47,7 +47,7 @@ function AuditPage() {
 
   const verifyChain = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.rpc("verify_audit_chain");
+      const { data, error } = await sql.rpc("verify_audit_chain");
       if (error) throw error;
       return (data as any[])?.[0] as { broken_seq: number | null; total: number };
     },

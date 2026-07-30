@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Plus, RefreshCcw, FileText, User } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 
 type Activity = {
   key: string;
@@ -29,22 +29,22 @@ export function LatestActivity() {
     refetchInterval: 30_000,
     queryFn: async (): Promise<Activity[]> => {
       const [loans, reps, custs, txs] = await Promise.all([
-        supabase
+        sql
           .from("loans")
           .select("id, loan_number, principal, status, created_at, disbursement_date, created_by, customer:customers!loans_customer_fk(id, full_name)")
           .order("created_at", { ascending: false })
           .limit(8),
-        supabase
+        sql
           .from("loan_repayments")
           .select("id, amount, paid_at, created_at, posted_by, loan:loans!loan_repayments_loan_fk(id, loan_number, customer:customers!loans_customer_fk(id, full_name))")
           .order("created_at", { ascending: false })
           .limit(8),
-        supabase
+        sql
           .from("customers")
           .select("id, full_name, created_at, created_by")
           .order("created_at", { ascending: false })
           .limit(6),
-        supabase
+        sql
           .from("transactions")
           .select("id, amount, txn_type, created_at, performed_by, account:accounts!transactions_account_fk(id, account_number, customer:customers!accounts_customer_fk(id, full_name))")
           .order("created_at", { ascending: false })
@@ -59,7 +59,7 @@ export function LatestActivity() {
       for (const t of txs.data ?? []) if (t.performed_by) ids.add(t.performed_by as string);
       const userMap: Record<string, string> = {};
       if (ids.size) {
-        const { data: profs } = await supabase
+        const { data: profs } = await sql
           .from("profiles")
           .select("id, full_name, email")
           .in("id", Array.from(ids));

@@ -3,8 +3,9 @@
 // so the Lovable preview keeps working; set VITE_API_URL in your .env to flip
 // the frontend onto the Node backend.
 
-export const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-export const USE_NODE_API = !!API_BASE;
+export const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "http://localhost:8080";
+export const USE_NODE_API = true;
 
 const ACCESS_KEY = "cb.access";
 const USER_KEY = "cb.user";

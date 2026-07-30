@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 import { fmtKES as _fmtKES } from "@/lib/format";
 
@@ -24,7 +24,7 @@ export function LoanDetailDialog({ loan, open, onOpenChange }: { loan: LoanLite 
     queryKey: ["repayments", loan?.id],
     enabled: !!loan?.id && open,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sql
         .from("loan_repayments")
         .select("id, amount, reference, paid_at, reversed, reversal_reason")
         .eq("loan_id", loan!.id)

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, TrendingDown } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
@@ -40,7 +40,7 @@ function ArrearsPage() {
     queryKey: ["arrears-loans"],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sql
         .from("loans")
         .select("id, loan_number, principal, outstanding_balance, due_date, disbursement_date, status, late_fees, customer:customers!loans_customer_fk(full_name, customer_number, phone)")
         .in("status", ["active", "in_arrears", "disbursed"])

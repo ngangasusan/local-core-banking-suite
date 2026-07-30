@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { api, fetchMe } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,8 +16,8 @@ export function MfaEnroll() {
   const [busy, setBusy] = useState(false);
 
   const refresh = async () => {
-    const { data } = await supabase.auth.mfa.listFactors();
-    setFactors([...(data?.totp ?? [])] as Factor[]);
+    const me = await fetchMe();
+    setFactors(me?.mfa_enrolled ? [{ id: "totp", status: "verified", factor_type: "Authenticator app" }] : []);
   };
   useEffect(() => { refresh(); }, []);
 
@@ -25,27 +25,35 @@ export function MfaEnroll() {
 
   const startEnroll = async () => {
     setBusy(true);
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `Authenticator ${Date.now()}` });
+    try {
+      const data = await api.post<{ secret: string; qr_code: string }>("/auth/mfa/enroll/start");
+      setEnrolling({ id: "totp", qr: data.qr_code, secret: data.secret });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
     setBusy(false);
-    if (error) return toast.error(error.message);
-    if (data) setEnrolling({ id: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
   };
 
   const finishEnroll = async () => {
     if (!enrolling) return;
     setBusy(true);
-    const { data: chal, error: cerr } = await supabase.auth.mfa.challenge({ factorId: enrolling.id });
-    if (cerr || !chal) { setBusy(false); return toast.error(cerr?.message ?? "Challenge failed"); }
-    const { error } = await supabase.auth.mfa.verify({ factorId: enrolling.id, challengeId: chal.id, code });
+    try {
+      await api.post("/auth/mfa/enroll/finish", { code });
+    } catch (e) {
+      setBusy(false);
+      return toast.error((e as Error).message);
+    }
     setBusy(false);
-    if (error) return toast.error(error.message);
     toast.success("MFA enabled");
     setEnrolling(null); setCode(""); refresh();
   };
 
-  const removeFactor = async (id: string) => {
-    const { error } = await supabase.auth.mfa.unenroll({ factorId: id });
-    if (error) return toast.error(error.message);
+  const removeFactor = async (_id: string) => {
+    try {
+      await api.post("/auth/mfa/disable");
+    } catch (e) {
+      return toast.error((e as Error).message);
+    }
     toast.success("Factor removed"); refresh();
   };
 

@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
+import { api } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -70,9 +71,7 @@ function CreateUserDialog() {
         role,
       };
       if (payload.password.length < 8) throw new Error("Password must be at least 8 characters");
-      const { data, error } = await supabase.functions.invoke("admin-create-user", { body: payload });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      await api.post<{ id: string }>("/auth/users", payload);
     },
     onSuccess: () => {
       toast.success("User created");
@@ -115,8 +114,8 @@ function UsersTab() {
   const { data: users = [] } = useQuery({
     queryKey: ["users-list"],
     queryFn: async () => {
-      const { data: profiles } = await supabase.from("profiles").select("*");
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
+      const { data: profiles } = await sql.from("profiles").select("*");
+      const { data: roles } = await sql.from("user_roles").select("user_id, role");
       return (profiles ?? []).map((p) => ({
         ...p,
         roles: (roles ?? []).filter((r) => r.user_id === p.id).map((r) => r.role as AppRole),
@@ -126,7 +125,7 @@ function UsersTab() {
 
   const setActive = useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
-      const { error } = await supabase.from("profiles").update({ is_active: active }).eq("id", id);
+      const { error } = await sql.from("profiles").update({ is_active: active }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("User updated"); qc.invalidateQueries({ queryKey: ["users-list"] }); },
@@ -135,7 +134,7 @@ function UsersTab() {
 
   const addRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+      const { error } = await sql.from("user_roles").insert({ user_id: userId, role });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Role assigned"); qc.invalidateQueries({ queryKey: ["users-list"] }); },
@@ -144,7 +143,7 @@ function UsersTab() {
 
   const removeRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
-      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
+      const { error } = await sql.from("user_roles").delete().eq("user_id", userId).eq("role", role);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Role removed"); qc.invalidateQueries({ queryKey: ["users-list"] }); },
@@ -175,7 +174,7 @@ function UsersTab() {
               <td className="px-4 py-3">
                 <div className="flex flex-wrap gap-1">
                   {u.roles.length === 0 && <span className="text-xs text-muted-foreground">no roles</span>}
-                  {u.roles.map((r) => (
+                  {u.roles.map((r: AppRole) => (
                     <Badge key={r} variant="secondary" className="capitalize cursor-pointer" onClick={() => removeRole.mutate({ userId: u.id, role: r })} title="Click to remove">
                       {r.replace("_", " ")} ✕
                     </Badge>
@@ -224,14 +223,14 @@ function PermissionsTab() {
   const { data: permissions = [] } = useQuery({
     queryKey: ["permissions"],
     queryFn: async () => {
-      const { data } = await supabase.from("permissions").select("*").order("category").order("code");
+      const { data } = await sql.from("permissions").select("*").order("category").order("code");
       return data ?? [];
     },
   });
   const { data: rolePerms = [] } = useQuery({
     queryKey: ["role-permissions"],
     queryFn: async () => {
-      const { data } = await supabase.from("role_permissions").select("*");
+      const { data } = await sql.from("role_permissions").select("*");
       return data ?? [];
     },
   });
@@ -239,10 +238,10 @@ function PermissionsTab() {
   const toggle = useMutation({
     mutationFn: async ({ role, permId, currently }: { role: AppRole; permId: string; currently: boolean }) => {
       if (currently) {
-        const { error } = await supabase.from("role_permissions").delete().eq("role", role).eq("permission_id", permId);
+        const { error } = await sql.from("role_permissions").delete().eq("role", role).eq("permission_id", permId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("role_permissions").insert({ role, permission_id: permId });
+        const { error } = await sql.from("role_permissions").insert({ role, permission_id: permId });
         if (error) throw error;
       }
     },

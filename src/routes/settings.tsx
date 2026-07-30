@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +22,8 @@ function SettingsPage() {
     queryKey: ["staff"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("*");
-      const { data: r } = await supabase.from("user_roles").select("user_id, role");
+      const { data } = await sql.from("profiles").select("*");
+      const { data: r } = await sql.from("user_roles").select("user_id, role");
       return (data ?? []).map((p) => ({ ...p, roles: (r ?? []).filter((x) => x.user_id === p.id).map((x) => x.role) }));
     },
   });

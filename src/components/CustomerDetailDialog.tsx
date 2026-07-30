@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { sql } from "@/lib/sql-client";
 import { FileText, Eye, ShieldCheck, ShieldX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,7 +29,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
     queryKey: ["customer-accounts", customer?.id],
     enabled: !!customer?.id && open,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("accounts")
         .select("id, account_number, account_type, balance, status, currency")
         .eq("customer_id", customer!.id)
@@ -42,7 +42,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
     queryKey: ["customer-loans", customer?.id],
     enabled: !!customer?.id && open,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("loans")
         .select("id, loan_number, principal, outstanding_balance, status, disbursement_date, due_date")
         .eq("customer_id", customer!.id)
@@ -55,7 +55,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
     queryKey: ["customer-qualified", customer?.id],
     enabled: !!customer?.id && open,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("qualified_loan_amount", { _customer_id: customer!.id });
+      const { data, error } = await sql.rpc("qualified_loan_amount", { _customer_id: customer!.id });
       if (error) throw error;
       return Number(data ?? 0);
     },
@@ -65,7 +65,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
     queryKey: ["customer-id-docs", customer?.id],
     enabled: !!customer?.id && open,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await sql
         .from("kyc_documents")
         .select("id, doc_type, storage_path, uploaded_at")
         .eq("customer_id", customer!.id)
@@ -82,7 +82,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
     (async () => {
       const out: Record<string, string> = {};
       for (const d of idDocs) {
-        const { data } = await supabase.storage.from("kyc-documents").createSignedUrl(d.storage_path, 600);
+        const { data } = await sql.storage.from("kyc-documents").createSignedUrl(d.storage_path, 600);
         if (data?.signedUrl) out[d.id] = data.signedUrl;
       }
       if (!cancelled) setIdUrls(out);
@@ -99,7 +99,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
 
   const reveal = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.rpc("decrypt_customer_pii", { _customer_id: customer!.id });
+      const { data, error } = await sql.rpc("decrypt_customer_pii", { _customer_id: customer!.id });
       if (error) throw error;
       const row = (data as any[])?.[0];
       return row ?? null;
@@ -110,7 +110,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
 
   const verifyKyc = useMutation({
     mutationFn: async ({ approve, reason }: { approve: boolean; reason?: string }) => {
-      const { error } = await supabase.rpc("verify_customer_kyc", { _customer_id: customer!.id, _approve: approve, _reason: reason ?? undefined });
+      const { error } = await sql.rpc("verify_customer_kyc", { _customer_id: customer!.id, _approve: approve, _reason: reason ?? undefined });
       if (error) throw error;
     },
     onSuccess: () => {

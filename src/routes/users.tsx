@@ -71,10 +71,7 @@ function CreateUserDialog() {
         role,
       };
       if (payload.password.length < 8) throw new Error("Password must be at least 8 characters");
-      const data = await api.post<{ id: string }>("/auth/users", payload);
-      const error = null as { message?: string } | null;
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      await api.post<{ id: string }>("/auth/users", payload);
     },
     onSuccess: () => {
       toast.success("User created");

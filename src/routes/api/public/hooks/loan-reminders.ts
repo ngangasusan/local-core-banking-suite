@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
+
 
 // Generates loan reminder notifications + queues SMS/Email
 // Triggered daily by pg_cron. Rules:
@@ -14,10 +14,23 @@ export const Route = createFileRoute("/api/public/hooks/loan-reminders")({
         const token = auth?.replace("Bearer ", "");
         if (!token) return new Response("Missing auth", { status: 401 });
 
-        const url = process.env.SUPABASE_URL ?? import.meta.env.VITE_SUPABASE_URL;
-        const sb = createClient(url!, token, {
-          auth: { autoRefreshToken: false, persistSession: false },
-        });
+        const base = (process.env.API_URL ?? "http://localhost:8080").replace(/\/$/, "");
+        const call = async <T,>(path: string, init?: RequestInit): Promise<T> => {
+          const res = await fetch(`${base}${path}`, {
+            ...init,
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(init?.headers ?? {}) },
+          });
+          if (!res.ok) throw new Error(`${path} failed: ${res.status}`);
+          return (await res.json()) as T;
+        };
+        const sb = {
+          rpc: (name: string, args: Record<string, unknown> = {}) =>
+            call(`/rpc/${name}`, { method: "POST", body: JSON.stringify(args) }),
+          select: (table: string, qs: string) =>
+            call<{ rows: Record<string, unknown>[] }>(`/data/${table}?${qs}`),
+          insert: (table: string, row: Record<string, unknown>) =>
+            call(`/data/${table}`, { method: "POST", body: JSON.stringify(row) }),
+        };
 
         // 1) Mark overdue loans
         await sb.rpc("mark_overdue_loans");
@@ -27,18 +40,12 @@ export const Route = createFileRoute("/api/public/hooks/loan-reminders")({
         const in3 = new Date(today.getTime() + 3 * 86400000);
         const fmt = (d: Date) => d.toISOString().slice(0, 10);
 
-        const { data: loans, error } = await sb
-          .from("loans")
-          .select(
-            "id, loan_number, due_date, outstanding_balance, status, customer:customers!loans_customer_fk(id, full_name, phone, email)"
-          )
-          .in("status", ["active", "in_arrears"])
-          .gt("outstanding_balance", 0)
-          .or(`due_date.eq.${fmt(today)},due_date.eq.${fmt(in3)},due_date.lt.${fmt(today)}`);
-
-        if (error) {
-          return new Response(JSON.stringify({ error: error.message }), { status: 500 });
-        }
+        const params = new URLSearchParams();
+        params.set("select", "id, loan_number, due_date, outstanding_balance, status, customer:customers!loans_customer_fk(id, full_name, phone, email)");
+        params.append("status", "in.(active,in_arrears)");
+        params.append("outstanding_balance", "gt.0");
+        params.append("or", `(due_date.eq.${fmt(today)},due_date.eq.${fmt(in3)},due_date.lt.${fmt(today)})`);
+        const loans = (await sb.select("loans", params.toString())).rows as Record<string, unknown>[];
 
         let queued = 0;
         for (const l of loans ?? []) {
@@ -67,7 +74,7 @@ export const Route = createFileRoute("/api/public/hooks/loan-reminders")({
           const body = `Dear ${customer.full_name}, your loan ${l.loan_number} of outstanding ${l.outstanding_balance} is ${category === "overdue" ? `${daysOverdue} day(s) overdue` : category === "due_today" ? "due today" : "due in 3 days"}. Please make payment.`;
 
           if (customer.phone) {
-            await sb.from("sms_queue").insert({
+            await sb.insert("sms_queue", {
               to_phone: customer.phone,
               message: body,
               customer_id: customer.id,
@@ -76,7 +83,7 @@ export const Route = createFileRoute("/api/public/hooks/loan-reminders")({
             queued++;
           }
           if (customer.email) {
-            await sb.from("email_queue").insert({
+            await sb.insert("email_queue", {
               to_email: customer.email,
               subject: title,
               body,

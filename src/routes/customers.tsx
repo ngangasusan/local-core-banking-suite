@@ -114,7 +114,7 @@ function CustomersPage() {
         address: parsed.address || null,
         city: parsed.city || null,
         occupation: parsed.occupation || null,
-        monthly_income: parsed.monthly_income ? Number(parsed.monthly_income) : null,
+        monthly_income: parsed.monthly_income ? Number(parsed.monthly_income.replace(/,/g, "")) : null,
         kyc_notes: parsed.kyc_notes || null,
         created_by: user!.id,
       }).select("id").single();

@@ -57,8 +57,11 @@ function CustomersPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [kycFilter, setKycFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
+
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });

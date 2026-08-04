@@ -109,7 +109,11 @@ function AuditPage() {
                   <td className="px-4 py-3"><Badge variant={l.action === "DELETE" ? "destructive" : l.action === "INSERT" ? "default" : "secondary"}>{l.action}</Badge></td>
                   <td className="px-4 py-3">{l.table_name}</td>
                   <td className="px-4 py-3 font-mono text-xs">{l.record_id?.slice(0, 8)}…</td>
-                  <td className="px-4 py-3 font-mono text-xs">{l.user_id?.slice(0, 8) ?? "system"}</td>
+                  <td className="px-4 py-3 text-xs">
+                    <div className="font-medium">{(l as any).user_name}</div>
+                    <div className="font-mono text-[10px] text-muted-foreground">{l.user_id?.slice(0, 8) ?? "—"}</div>
+                  </td>
+
                 </tr>
               ))}
             </tbody>

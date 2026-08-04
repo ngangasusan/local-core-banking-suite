@@ -364,6 +364,25 @@ function Field({ label, name, type = "text", required, defaultValue }: { label: 
   );
 }
 
+function MoneyField({ label, name, defaultValue }: { label: string; name: string; defaultValue?: string }) {
+  const group = (s: string) => s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const [value, setValue] = useState(defaultValue ? group(defaultValue.replace(/\D/g, "")) : "");
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={name}>{label}</Label>
+      <Input
+        id={name}
+        name={name}
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => setValue(group(e.target.value.replace(/\D/g, "")))}
+        placeholder="0"
+      />
+    </div>
+  );
+}
+
+
 function KycBadge({ status }: { status: string }) {
   if (status === "verified") return <Badge className="bg-success text-success-foreground hover:bg-success"><ShieldCheck className="h-3 w-3 mr-1" />Verified</Badge>;
   if (status === "rejected") return <Badge variant="destructive"><ShieldAlert className="h-3 w-3 mr-1" />Rejected</Badge>;

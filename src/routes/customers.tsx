@@ -65,16 +65,19 @@ function CustomersPage() {
   }, [user, loading, navigate]);
 
   const { data: customers = [] } = useQuery({
-    queryKey: ["customers", search],
+    queryKey: ["customers", search, kycFilter, activeFilter],
     enabled: !!user,
     queryFn: async () => {
       let q = sql.from("customers").select("*").order("created_at", { ascending: false }).limit(100);
       if (search) q = q.or(`full_name.ilike.%${search}%,customer_number.ilike.%${search}%,phone.ilike.%${search}%`);
+      if (kycFilter !== "all") q = q.eq("kyc_status", kycFilter);
+      if (activeFilter !== "all") q = q.eq("is_active", activeFilter === "active");
       const { data, error } = await q;
       if (error) throw error;
       return data;
     },
   });
+
 
   const createMut = useMutation({
     mutationFn: async (form: FormData) => {

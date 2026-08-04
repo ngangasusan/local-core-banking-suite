@@ -316,7 +316,9 @@ function LoansPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
+
       </div>
 
       <Dialog open={!!rejectFor} onOpenChange={(o) => !o && setRejectFor(null)}>

@@ -141,6 +141,18 @@ function LoansPage() {
   const canCreate = hasRole("admin") || hasRole("super_admin") || hasRole("manager") || hasRole("loan_officer");
   const canApprove = hasRole("admin") || hasRole("super_admin") || hasRole("manager");
 
+  const s = search.trim().toLowerCase();
+  const filteredLoans = (loans as any[]).filter((l) => {
+    if (statusFilter !== "all" && l.status !== statusFilter) return false;
+    if (!s) return true;
+    return (
+      String(l.loan_number ?? "").toLowerCase().includes(s) ||
+      String(l.customer?.full_name ?? "").toLowerCase().includes(s) ||
+      String(l.customer?.customer_number ?? "").toLowerCase().includes(s)
+    );
+  });
+
+
   return (
     <AppShell>
       <div className="p-6 lg:p-10 max-w-7xl mx-auto">

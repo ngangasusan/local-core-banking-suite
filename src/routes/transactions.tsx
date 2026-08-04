@@ -38,10 +38,12 @@ function TxnPage() {
       const { data, error } = await sql
         .from("transactions")
         .select("*, account:accounts!transactions_account_fk(account_number, customer:customers!accounts_customer_fk(full_name))")
+        .in("txn_type", ["deposit", "withdrawal", "transfer"])
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
       return data;
+
     },
   });
 

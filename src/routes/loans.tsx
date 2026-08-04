@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Search as SearchIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";

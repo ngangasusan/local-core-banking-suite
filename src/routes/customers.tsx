@@ -57,24 +57,30 @@ function CustomersPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [kycFilter, setKycFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
+
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [user, loading, navigate]);
 
   const { data: customers = [] } = useQuery({
-    queryKey: ["customers", search],
+    queryKey: ["customers", search, kycFilter, activeFilter],
     enabled: !!user,
     queryFn: async () => {
       let q = sql.from("customers").select("*").order("created_at", { ascending: false }).limit(100);
       if (search) q = q.or(`full_name.ilike.%${search}%,customer_number.ilike.%${search}%,phone.ilike.%${search}%`);
+      if (kycFilter !== "all") q = q.eq("kyc_status", kycFilter);
+      if (activeFilter !== "all") q = q.eq("is_active", activeFilter === "active");
       const { data, error } = await q;
       if (error) throw error;
       return data;
     },
   });
+
 
   const createMut = useMutation({
     mutationFn: async (form: FormData) => {
@@ -108,7 +114,7 @@ function CustomersPage() {
         address: parsed.address || null,
         city: parsed.city || null,
         occupation: parsed.occupation || null,
-        monthly_income: parsed.monthly_income ? Number(parsed.monthly_income) : null,
+        monthly_income: parsed.monthly_income ? Number(parsed.monthly_income.replace(/,/g, "")) : null,
         kyc_notes: parsed.kyc_notes || null,
         created_by: user!.id,
       }).select("id").single();
@@ -140,7 +146,7 @@ function CustomersPage() {
           relationship: parsed.g_relationship || null,
           address: parsed.g_address || null,
           occupation: parsed.g_occupation || null,
-          monthly_income: parsed.g_monthly_income ? Number(parsed.g_monthly_income) : null,
+          monthly_income: parsed.g_monthly_income ? Number(parsed.g_monthly_income.replace(/,/g, "")) : null,
           created_by: user!.id,
         });
         if (gErr) throw gErr;
@@ -225,7 +231,7 @@ function CustomersPage() {
                   <Field label="Phone" name="phone" />
                   <Field label="City" name="city" />
                   <Field label="Occupation" name="occupation" />
-                  <Field label="Monthly income (KES)" name="monthly_income" type="number" />
+                  <MoneyField label="Monthly income (KES)" name="monthly_income" />
                   <div className="sm:col-span-2 space-y-2">
                     <Label htmlFor="id_document">ID document upload *</Label>
                     <Input id="id_document" name="id_document" type="file" accept="image/*,application/pdf" required />
@@ -250,7 +256,7 @@ function CustomersPage() {
                   <Field label="Guarantor email" name="g_email" type="email" />
                   <Field label="Relationship to customer" name="g_relationship" />
                   <Field label="Guarantor occupation" name="g_occupation" />
-                  <Field label="Guarantor monthly income (KES)" name="g_monthly_income" type="number" />
+                  <MoneyField label="Guarantor monthly income (KES)" name="g_monthly_income" />
                   <div className="sm:col-span-2 space-y-2">
                     <Label>Guarantor address</Label>
                     <Textarea name="g_address" rows={2} />
@@ -267,8 +273,8 @@ function CustomersPage() {
         />
 
         <div className="bg-card border border-border rounded-xl">
-          <div className="p-4 border-b border-border">
-            <div className="relative max-w-sm">
+          <div className="p-4 border-b border-border flex flex-wrap gap-3 items-center">
+            <div className="relative max-w-sm flex-1 min-w-[220px]">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search name, number or phone…"
@@ -277,7 +283,28 @@ function CustomersPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            <Select value={kycFilter} onValueChange={setKycFilter}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="KYC status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All KYC statuses</SelectItem>
+                <SelectItem value="pending">KYC pending</SelectItem>
+                <SelectItem value="verified">KYC verified</SelectItem>
+                <SelectItem value="rejected">KYC rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={activeFilter} onValueChange={setActiveFilter}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All clients</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {(kycFilter !== "all" || activeFilter !== "all" || search) && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setKycFilter("all"); setActiveFilter("all"); }}>Clear</Button>
+            )}
           </div>
+
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -336,6 +363,25 @@ function Field({ label, name, type = "text", required, defaultValue }: { label: 
     </div>
   );
 }
+
+function MoneyField({ label, name, defaultValue }: { label: string; name: string; defaultValue?: string }) {
+  const group = (s: string) => s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const [value, setValue] = useState(defaultValue ? group(defaultValue.replace(/\D/g, "")) : "");
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={name}>{label}</Label>
+      <Input
+        id={name}
+        name={name}
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => setValue(group(e.target.value.replace(/\D/g, "")))}
+        placeholder="0"
+      />
+    </div>
+  );
+}
+
 
 function KycBadge({ status }: { status: string }) {
   if (status === "verified") return <Badge className="bg-success text-success-foreground hover:bg-success"><ShieldCheck className="h-3 w-3 mr-1" />Verified</Badge>;

@@ -48,27 +48,29 @@ function DashboardPage() {
   });
 
   const { data: dueSoon = [] } = useQuery({
-    queryKey: ["loans-due-soon"],
+    queryKey: ["loans-due-soon-upcoming"],
     enabled: !!user,
     queryFn: async () => {
       const today = new Date();
       const inWeek = new Date(Date.now() + 7 * 86400000);
-      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      const fmtD = (d: Date) => d.toISOString().slice(0, 10);
       const { data } = await sql
         .from("loans")
         .select("id, loan_number, due_date, outstanding_balance, status, customer:customers!loans_customer_fk(full_name)")
         .in("status", ["active", "in_arrears"])
         .gt("outstanding_balance", 0)
-        .lte("due_date", fmt(inWeek))
+        .gte("due_date", fmtD(today))
+        .lte("due_date", fmtD(inWeek))
         .order("due_date", { ascending: true })
         .limit(20);
       return (data ?? []).filter((l) => l.due_date).map((l) => {
         const d = new Date(l.due_date as string);
         const days = Math.floor((d.getTime() - today.getTime()) / 86400000);
         return { ...l, daysToDue: days };
-      });
+      }).filter((l) => l.daysToDue >= 0);
     },
   });
+
 
   const { data: disbursements } = useQuery({
     queryKey: ["disbursements-by-year-month"],
@@ -135,12 +137,7 @@ function DashboardPage() {
           description="Snapshot of your institution's performance and pipeline."
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="lg:col-span-2">
-            <LatestActivity />
-          </div>
-          <DashboardSidebar />
-        </div>
+
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {cards.map(({ label, value, icon: Icon, link }) => (
@@ -233,8 +230,9 @@ function DashboardPage() {
         <div className="bg-card border border-border rounded-xl p-6 mt-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-semibold flex items-center gap-2"><CalendarClock className="h-4 w-4 text-primary" />Loans due in the next 7 days</h3>
-              <p className="text-sm text-muted-foreground">Customers to follow up with this week. Includes loans already overdue.</p>
+              <h3 className="font-semibold flex items-center gap-2"><CalendarClock className="h-4 w-4 text-primary" />Upcoming loans due in the next 7 days</h3>
+              <p className="text-sm text-muted-foreground">Customers to follow up with this week. Overdue loans are tracked in Arrears.</p>
+
             </div>
             <Link to="/loans" className="text-sm text-primary hover:underline">View all loans →</Link>
           </div>
@@ -254,7 +252,6 @@ function DashboardPage() {
                 </thead>
                 <tbody>
                   {dueSoon.map((l) => {
-                    const overdue = l.daysToDue < 0;
                     const today = l.daysToDue === 0;
                     return (
                       <tr key={l.id} className="border-t border-border">
@@ -262,8 +259,8 @@ function DashboardPage() {
                         <td className="py-2 pr-4">{l.customer?.full_name ?? "—"}</td>
                         <td className="py-2 pr-4 text-xs">{l.due_date}</td>
                         <td className="py-2 pr-4">
-                          <span className={"text-xs px-2 py-0.5 rounded font-medium " + (overdue ? "bg-destructive/15 text-destructive" : today ? "bg-warning/15 text-warning-foreground" : "bg-primary-soft text-primary")}>
-                            {overdue ? `${Math.abs(l.daysToDue)}d overdue` : today ? "due today" : `in ${l.daysToDue}d`}
+                          <span className={"text-xs px-2 py-0.5 rounded font-medium " + (today ? "bg-warning/15 text-warning-foreground" : "bg-primary-soft text-primary")}>
+                            {today ? "due today" : `in ${l.daysToDue}d`}
                           </span>
                         </td>
                         <td className="py-2 text-right font-mono">{fmtKES(Number(l.outstanding_balance))}</td>
@@ -275,7 +272,15 @@ function DashboardPage() {
             </div>
           )}
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+          <div className="lg:col-span-2">
+            <LatestActivity />
+          </div>
+          <DashboardSidebar />
+        </div>
       </div>
+
     </AppShell>
   );
 }

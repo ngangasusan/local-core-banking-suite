@@ -300,6 +300,20 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
     },
   });
 
+  const { data: history = [] } = useQuery({
+    queryKey: ["loan-history", row?.loan_id],
+    enabled: !!row,
+    queryFn: async () => {
+      const { data } = await sql
+        .from("loan_repayments")
+        .select("id, amount, reference, paid_at, created_at, principal_portion, interest_portion, penalty_portion, fee_portion")
+        .eq("loan_id", row!.loan_id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+
   const invalidateAll = () => {
     qc.invalidateQueries({ queryKey: ["collections-worklist"] });
     qc.invalidateQueries({ queryKey: ["collection-actions", row?.loan_id] });
@@ -439,13 +453,49 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
         </div>
 
         <Tabs defaultValue="contact">
-          <TabsList className="grid grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="contact">Contact</TabsTrigger>
+            <TabsTrigger value="history">Loan history</TabsTrigger>
             <TabsTrigger value="ptp">Promises</TabsTrigger>
             <TabsTrigger value="guarantors">Guarantors</TabsTrigger>
             <TabsTrigger value="restructure">Restructure</TabsTrigger>
             <TabsTrigger value="writeoff">Write-off</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="history" className="space-y-3 mt-4">
+            <div className="border border-border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2">When</th>
+                    <th className="text-left px-3 py-2">Reference</th>
+                    <th className="text-right px-3 py-2">Amount</th>
+                    <th className="text-right px-3 py-2">Principal</th>
+                    <th className="text-right px-3 py-2">Interest</th>
+                    <th className="text-right px-3 py-2">Penalty / fees</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.length === 0 && <tr><td colSpan={6} className="text-center py-4 text-muted-foreground">No payments recorded on this loan.</td></tr>}
+                  {history.map((p: any) => (
+                    <tr key={p.id} className="border-t border-border">
+                      <td className="px-3 py-2 text-xs">{new Date(p.paid_at ?? p.created_at).toLocaleString()}</td>
+                      <td className="px-3 py-2 font-mono text-xs">{p.reference ?? "—"}</td>
+                      <td className="px-3 py-2 text-right font-mono">{fmtKES(p.amount)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-xs">{fmtKES(p.principal_portion ?? 0)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-xs">{fmtKES(p.interest_portion ?? 0)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-xs">{fmtKES(Number(p.penalty_portion ?? 0) + Number(p.fee_portion ?? 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {history.length} payment{history.length === 1 ? "" : "s"} · total collected {fmtKES(history.reduce((s: number, p: any) => s + Number(p.amount || 0), 0))}
+            </div>
+          </TabsContent>
+
+
 
           <TabsContent value="contact" className="space-y-3 mt-4">
             <div className="border border-border rounded-lg p-3 bg-muted/30 grid grid-cols-2 gap-2">

@@ -32,9 +32,16 @@ function AuditPage() {
       if (table !== "all") q = q.eq("table_name", table);
       const { data, error } = await q;
       if (error) throw error;
-      return data;
+      const ids = Array.from(new Set((data ?? []).map((l: any) => l.user_id).filter(Boolean)));
+      const names: Record<string, string> = {};
+      if (ids.length) {
+        const { data: profs } = await sql.from("profiles").select("id, full_name, email").in("id", ids);
+        for (const p of profs ?? []) names[p.id] = p.full_name || p.email || "User";
+      }
+      return (data ?? []).map((l: any) => ({ ...l, user_name: l.user_id ? names[l.user_id] ?? "Unknown user" : "System" }));
     },
   });
+
 
   if (loading || !user) return null;
   if (!isPrivileged) {
@@ -102,7 +109,11 @@ function AuditPage() {
                   <td className="px-4 py-3"><Badge variant={l.action === "DELETE" ? "destructive" : l.action === "INSERT" ? "default" : "secondary"}>{l.action}</Badge></td>
                   <td className="px-4 py-3">{l.table_name}</td>
                   <td className="px-4 py-3 font-mono text-xs">{l.record_id?.slice(0, 8)}…</td>
-                  <td className="px-4 py-3 font-mono text-xs">{l.user_id?.slice(0, 8) ?? "system"}</td>
+                  <td className="px-4 py-3 text-xs">
+                    <div className="font-medium">{(l as any).user_name}</div>
+                    <div className="font-mono text-[10px] text-muted-foreground">{l.user_id?.slice(0, 8) ?? "—"}</div>
+                  </td>
+
                 </tr>
               ))}
             </tbody>

@@ -230,8 +230,9 @@ function DashboardPage() {
         <div className="bg-card border border-border rounded-xl p-6 mt-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-semibold flex items-center gap-2"><CalendarClock className="h-4 w-4 text-primary" />Loans due in the next 7 days</h3>
-              <p className="text-sm text-muted-foreground">Customers to follow up with this week. Includes loans already overdue.</p>
+              <h3 className="font-semibold flex items-center gap-2"><CalendarClock className="h-4 w-4 text-primary" />Upcoming loans due in the next 7 days</h3>
+              <p className="text-sm text-muted-foreground">Customers to follow up with this week. Overdue loans are tracked in Arrears.</p>
+
             </div>
             <Link to="/loans" className="text-sm text-primary hover:underline">View all loans →</Link>
           </div>

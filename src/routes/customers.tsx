@@ -273,8 +273,8 @@ function CustomersPage() {
         />
 
         <div className="bg-card border border-border rounded-xl">
-          <div className="p-4 border-b border-border">
-            <div className="relative max-w-sm">
+          <div className="p-4 border-b border-border flex flex-wrap gap-3 items-center">
+            <div className="relative max-w-sm flex-1 min-w-[220px]">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search name, number or phone…"
@@ -283,7 +283,28 @@ function CustomersPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            <Select value={kycFilter} onValueChange={setKycFilter}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="KYC status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All KYC statuses</SelectItem>
+                <SelectItem value="pending">KYC pending</SelectItem>
+                <SelectItem value="verified">KYC verified</SelectItem>
+                <SelectItem value="rejected">KYC rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={activeFilter} onValueChange={setActiveFilter}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All clients</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {(kycFilter !== "all" || activeFilter !== "all" || search) && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setKycFilter("all"); setActiveFilter("all"); }}>Clear</Button>
+            )}
           </div>
+
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

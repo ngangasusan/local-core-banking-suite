@@ -215,7 +215,30 @@ function LoansPage() {
 
         <LoanStats loans={loans} />
 
-        <div className="bg-card border border-border rounded-xl overflow-x-auto mt-4">
+        <div className="bg-card border border-border rounded-xl mt-4">
+          <div className="p-4 border-b border-border flex flex-wrap gap-3 items-center">
+            <div className="relative max-w-sm flex-1 min-w-[220px]">
+              <SearchIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search loan #, customer or customer #…"
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                {["all", "draft", "pending", "approved", "disbursed", "active", "in_arrears", "closed", "rejected"].map((s) => (
+                  <SelectItem key={s} value={s}>{s === "all" ? "All statuses" : s.replace("_", " ")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(search || statusFilter !== "all") && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStatusFilter("all"); }}>Clear</Button>
+            )}
+          </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
               <tr>
@@ -223,14 +246,15 @@ function LoansPage() {
                 <th className="text-left px-4 py-3 font-medium">Customer</th>
                 <th className="text-right px-4 py-3 font-medium">Principal</th>
                 <th className="text-right px-4 py-3 font-medium">Total payable</th>
+                <th className="text-left px-4 py-3 font-medium">Disbursed</th>
                 <th className="text-left px-4 py-3 font-medium">Due</th>
                 <th className="text-left px-4 py-3 font-medium">Status</th>
                 <th className="text-right px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {loans.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-muted-foreground">No loans yet.</td></tr>}
-              {loans.map((l) => {
+              {filteredLoans.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No loans match your filters.</td></tr>}
+              {filteredLoans.map((l) => {
                 const isCreator = l.created_by === user.id;
                 const principal = Number(l.principal);
                 const outstanding = Number(l.outstanding_balance);
@@ -241,6 +265,7 @@ function LoansPage() {
                 const paid = Math.max(principal - outstanding, 0);
                 const remaining = isOpen ? Math.max(total - paid, 0) : outstanding;
                 const isOverdue = l.status === "in_arrears" || (l.due_date && new Date(l.due_date) < new Date() && outstanding > 0 && l.status !== "closed");
+                const disbursedOn = l.disbursement_date ?? (l.disbursed_at ? String(l.disbursed_at).slice(0, 10) : null);
                 return (
                   <tr key={l.id} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDetailLoan(l)}>
                     <td className="px-4 py-3 font-mono text-xs">{l.loan_number}</td>
@@ -250,7 +275,9 @@ function LoansPage() {
                       <div className="font-semibold">{fmt(remaining)}</div>
                       {isOpen && <div className="text-[10px] text-muted-foreground">of {fmt(total)} · day {days}</div>}
                     </td>
+                    <td className="px-4 py-3 text-xs">{disbursedOn ?? "—"}</td>
                     <td className={"px-4 py-3 text-xs " + (isOverdue ? "text-destructive font-medium" : "")}>{l.due_date ?? "—"}{isOverdue && " ⚠"}</td>
+
                     <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex gap-1 flex-wrap justify-end">

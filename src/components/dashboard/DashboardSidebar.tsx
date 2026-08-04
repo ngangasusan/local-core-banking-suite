@@ -70,7 +70,7 @@ export function DashboardSidebar() {
       <section className="bg-card border border-border rounded-xl p-6">
         <h3 className="font-semibold tracking-tight mb-4">YOUR TASKS</h3>
         <div className="grid grid-cols-3 gap-2">
-          <TaskTile label="OVERDUE" value={tasks?.overdue ?? 0} to="/arrears" tone="destructive" icon={AlertTriangle} />
+          <TaskTile label="IN ARREARS" value={tasks?.overdue ?? 0} to="/arrears" tone="destructive" icon={AlertTriangle} />
           <TaskTile label="DUE TODAY" value={tasks?.dueToday ?? 0} to="/loans" tone="warning" icon={Clock} />
           <TaskTile label="UPCOMING" value={tasks?.upcoming ?? 0} to="/loans" tone="primary" icon={Clock} />
         </div>

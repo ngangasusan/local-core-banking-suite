@@ -54,20 +54,6 @@ function TxnPage() {
     },
   });
 
-  const { data: activeLoans = [] } = useQuery({
-    queryKey: ["loans-active-min"],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await sql
-        .from("loans")
-        .select("id, loan_number, outstanding_balance, customer:customers!loans_customer_fk(full_name)")
-        .in("status", ["active", "in_arrears"])
-        .gt("outstanding_balance", 0)
-        .order("loan_number");
-      return data ?? [];
-    },
-  });
-
   const post = useMutation({
     mutationFn: async (fd: FormData) => {
       const d = Object.fromEntries(fd.entries()) as Record<string, string>;
@@ -75,35 +61,6 @@ function TxnPage() {
       if (amount <= 0) throw new Error("Amount must be positive");
       const reference = "TX" + Date.now();
 
-      // Loan repayment branch — uses repayments table; trigger reduces balance + recomputes credit score
-      if (type === "loan_repayment") {
-        const loan = activeLoans.find((l) => l.id === d.loan_id);
-        if (!loan) throw new Error("Select a loan");
-        if (amount > Number(loan.outstanding_balance)) throw new Error("Amount exceeds outstanding balance");
-        const ref = "RP" + Date.now().toString().slice(-9);
-        const { error: rerr } = await sql.from("loan_repayments").insert({
-          loan_id: d.loan_id, amount, reference: ref, posted_by: user!.id,
-        });
-        if (rerr) throw rerr;
-        const { error: terr } = await sql.from("transactions").insert({
-          reference: ref, txn_type: "loan_repayment", amount,
-          description: d.description || `Repayment for ${loan.loan_number}`,
-          performed_by: user!.id,
-        });
-        if (terr) throw terr;
-        // GL: Cash Dr / Loans Receivable Cr
-        const { data: coa } = await sql.from("chart_of_accounts").select("id, code").in("code", ["1000", "1100"]);
-        const cash = coa?.find((c) => c.code === "1000")?.id;
-        const loanRec = coa?.find((c) => c.code === "1100")?.id;
-        if (cash && loanRec) {
-          await sql.from("journal_entries").insert({
-            reference: ref, description: `Repayment ${loan.loan_number}`,
-            debit_account: cash, credit_account: loanRec, amount,
-            source_table: "loan_repayments", source_id: null, created_by: user!.id,
-          });
-        }
-        return;
-      }
 
       const acct = accounts.find((a) => a.id === d.account_id);
       if (!acct) throw new Error("Account not found");

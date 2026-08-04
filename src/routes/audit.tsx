@@ -32,9 +32,16 @@ function AuditPage() {
       if (table !== "all") q = q.eq("table_name", table);
       const { data, error } = await q;
       if (error) throw error;
-      return data;
+      const ids = Array.from(new Set((data ?? []).map((l: any) => l.user_id).filter(Boolean)));
+      const names: Record<string, string> = {};
+      if (ids.length) {
+        const { data: profs } = await sql.from("profiles").select("id, full_name, email").in("id", ids);
+        for (const p of profs ?? []) names[p.id] = p.full_name || p.email || "User";
+      }
+      return (data ?? []).map((l: any) => ({ ...l, user_name: l.user_id ? names[l.user_id] ?? "Unknown user" : "System" }));
     },
   });
+
 
   if (loading || !user) return null;
   if (!isPrivileged) {

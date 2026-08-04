@@ -231,7 +231,7 @@ function CustomersPage() {
                   <Field label="Phone" name="phone" />
                   <Field label="City" name="city" />
                   <Field label="Occupation" name="occupation" />
-                  <Field label="Monthly income (KES)" name="monthly_income" type="number" />
+                  <MoneyField label="Monthly income (KES)" name="monthly_income" />
                   <div className="sm:col-span-2 space-y-2">
                     <Label htmlFor="id_document">ID document upload *</Label>
                     <Input id="id_document" name="id_document" type="file" accept="image/*,application/pdf" required />

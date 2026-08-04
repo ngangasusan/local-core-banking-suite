@@ -252,7 +252,6 @@ function DashboardPage() {
                 </thead>
                 <tbody>
                   {dueSoon.map((l) => {
-                    const overdue = l.daysToDue < 0;
                     const today = l.daysToDue === 0;
                     return (
                       <tr key={l.id} className="border-t border-border">
@@ -260,8 +259,8 @@ function DashboardPage() {
                         <td className="py-2 pr-4">{l.customer?.full_name ?? "—"}</td>
                         <td className="py-2 pr-4 text-xs">{l.due_date}</td>
                         <td className="py-2 pr-4">
-                          <span className={"text-xs px-2 py-0.5 rounded font-medium " + (overdue ? "bg-destructive/15 text-destructive" : today ? "bg-warning/15 text-warning-foreground" : "bg-primary-soft text-primary")}>
-                            {overdue ? `${Math.abs(l.daysToDue)}d overdue` : today ? "due today" : `in ${l.daysToDue}d`}
+                          <span className={"text-xs px-2 py-0.5 rounded font-medium " + (today ? "bg-warning/15 text-warning-foreground" : "bg-primary-soft text-primary")}>
+                            {today ? "due today" : `in ${l.daysToDue}d`}
                           </span>
                         </td>
                         <td className="py-2 text-right font-mono">{fmtKES(Number(l.outstanding_balance))}</td>
@@ -273,7 +272,15 @@ function DashboardPage() {
             </div>
           )}
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+          <div className="lg:col-span-2">
+            <LatestActivity />
+          </div>
+          <DashboardSidebar />
+        </div>
       </div>
+
     </AppShell>
   );
 }

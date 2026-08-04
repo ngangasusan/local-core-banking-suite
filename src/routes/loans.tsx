@@ -31,6 +31,9 @@ function LoansPage() {
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [detailLoan, setDetailLoan] = useState<any | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
 

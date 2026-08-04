@@ -300,6 +300,20 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
     },
   });
 
+  const { data: history = [] } = useQuery({
+    queryKey: ["loan-history", row?.loan_id],
+    enabled: !!row,
+    queryFn: async () => {
+      const { data } = await sql
+        .from("loan_repayments")
+        .select("id, amount, reference, paid_at, created_at, principal_portion, interest_portion, penalty_portion, fee_portion")
+        .eq("loan_id", row!.loan_id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+
   const invalidateAll = () => {
     qc.invalidateQueries({ queryKey: ["collections-worklist"] });
     qc.invalidateQueries({ queryKey: ["collection-actions", row?.loan_id] });

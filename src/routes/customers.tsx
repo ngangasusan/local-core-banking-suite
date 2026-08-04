@@ -146,7 +146,7 @@ function CustomersPage() {
           relationship: parsed.g_relationship || null,
           address: parsed.g_address || null,
           occupation: parsed.g_occupation || null,
-          monthly_income: parsed.g_monthly_income ? Number(parsed.g_monthly_income) : null,
+          monthly_income: parsed.g_monthly_income ? Number(parsed.g_monthly_income.replace(/,/g, "")) : null,
           created_by: user!.id,
         });
         if (gErr) throw gErr;

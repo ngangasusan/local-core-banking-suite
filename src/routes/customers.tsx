@@ -256,7 +256,7 @@ function CustomersPage() {
                   <Field label="Guarantor email" name="g_email" type="email" />
                   <Field label="Relationship to customer" name="g_relationship" />
                   <Field label="Guarantor occupation" name="g_occupation" />
-                  <Field label="Guarantor monthly income (KES)" name="g_monthly_income" type="number" />
+                  <MoneyField label="Guarantor monthly income (KES)" name="g_monthly_income" />
                   <div className="sm:col-span-2 space-y-2">
                     <Label>Guarantor address</Label>
                     <Textarea name="g_address" rows={2} />

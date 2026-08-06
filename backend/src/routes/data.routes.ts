@@ -404,7 +404,7 @@ r.patch("/:table", ah(async (req, res) => {
   const params: unknown[] = [];
   const patch: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(req.body ?? {})) {
-    if (m.cols.get(table)!.has(k) && k !== "id") patch[k] = v === undefined ? null : v;
+    if (m.cols.get(table)!.has(k) && k !== "id") patch[k] = v === undefined ? null : coerceValue(v);
   }
   const cols = Object.keys(patch);
   if (!cols.length) throw new HttpError(400, "no_valid_columns");
@@ -420,8 +420,10 @@ r.patch("/:table", ah(async (req, res) => {
       `SELECT ${q("id")} FROM ${q(table)} ${where}`, whereParams
     )).map((x) => x.id);
   }
+  if (table === "loans") await assertCustomerVerified(ids, patch.status);
   await exec(`UPDATE ${q(table)} SET ${cols.map((c) => `${q(c)} = ?`).join(", ")} ${where}`,
     [...params, ...whereParams]);
+
   const rows = req.query.select ? await reselect(table, ids, String(req.query.select)) : [];
   res.json({ rows, count: ids.length });
 }));

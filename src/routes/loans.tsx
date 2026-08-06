@@ -15,8 +15,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RepaymentDialog } from "@/components/RepaymentDialog";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
 import { computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
+import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";
 import { fmtKES as _fmtKES } from "@/lib/format";
+
+const LOAN_CSV_COLUMNS = [
+  "loan_number", "customer_number", "customer_name", "principal", "interest_rate", "term_months",
+  "method", "status", "outstanding_balance", "late_fees", "disbursement_date", "due_date", "purpose", "created_at",
+];
+
 
 export const Route = createFileRoute("/loans")({
   head: () => ({ meta: [{ title: "Loans — CoreBank" }, { name: "description", content: "Loan origination, approval and disbursement." }] }),

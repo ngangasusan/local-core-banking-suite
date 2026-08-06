@@ -259,7 +259,10 @@ function LoansPage() {
                 </form>
               </DialogContent>
             </Dialog>
+            )}
+            </div>
           )}
+
         />
 
         <LoanStats loans={loans} />

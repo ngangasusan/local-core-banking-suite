@@ -333,7 +333,7 @@ function coerceValue(v: unknown): unknown {
 }
 
 // Loans may not move past application state unless the client's KYC is verified.
-const LOAN_GATED_STATUSES = new Set(["pending", "approved", "disbursed", "active"]);
+const LOAN_GATED_STATUSES = new Set(["approved", "disbursed", "active"]);
 async function assertCustomerVerified(loanIds: string[], status: unknown) {
   if (!loanIds.length || typeof status !== "string" || !LOAN_GATED_STATUSES.has(status)) return;
   const rows = await query<RowDataPacket & { kyc_status: string; full_name: string }>(

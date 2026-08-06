@@ -309,17 +309,24 @@ function LoansPage() {
                     <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex gap-1 flex-wrap justify-end">
-                        {canCreate && l.status === "draft" && isCreator && (
-                          <Button size="sm" variant="outline" onClick={() => submit.mutate(l.id)}>Submit</Button>
+                        {canCreate && l.status === "draft" && (
+                          <Button size="sm" variant="outline" disabled={submit.isPending} onClick={() => submit.mutate(l.id)}>Submit</Button>
                         )}
                         {canApprove && l.status === "pending" && (!isCreator || hasRole("super_admin")) && (
                           <>
-                            <Button size="sm" variant="outline" onClick={() => approve.mutate(l.id)}>
-                              Approve{isCreator && hasRole("super_admin") ? " (bypass)" : ""}
-                            </Button>
+                            {l.customer?.kyc_status === "verified" ? (
+                              <Button size="sm" variant="outline" onClick={() => approve.mutate(l.id)}>
+                                Approve{isCreator && hasRole("super_admin") ? " (bypass)" : ""}
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-warning-foreground italic" title="Client KYC must be verified before approval">
+                                client not verified
+                              </span>
+                            )}
                             <Button size="sm" variant="ghost" onClick={() => setRejectFor(l.id)}>Reject</Button>
                           </>
                         )}
+
                         {canApprove && l.status === "pending" && isCreator && !hasRole("super_admin") && (
                           <span className="text-xs text-muted-foreground italic">awaiting checker</span>
                         )}

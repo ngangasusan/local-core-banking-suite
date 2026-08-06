@@ -115,11 +115,16 @@ const DecideBody = z.object({
 r.post("/:id/decision", requireRole("admin", "super_admin", "manager"),
   ah(async (req, res) => {
     const body = DecideBody.parse(req.body);
-    const [loan] = await query<RowDataPacket & { status: string }>(
-      "SELECT status FROM loans WHERE id = ? LIMIT 1", [req.params.id]
+    const [loan] = await query<RowDataPacket & { status: string; kyc_status: string }>(
+      `SELECT l.status, c.kyc_status FROM loans l JOIN customers c ON c.id = l.customer_id
+        WHERE l.id = ? LIMIT 1`, [req.params.id]
     );
     if (!loan) return res.status(404).json({ error: "not_found" });
     if (loan.status !== "pending") return res.status(409).json({ error: "not_pending" });
+    if (body.decision === "approve" && loan.kyc_status !== "verified")
+      return res.status(409).json({ error: "client_not_verified" });
+
+
 
     if (body.decision === "approve") {
       await exec(

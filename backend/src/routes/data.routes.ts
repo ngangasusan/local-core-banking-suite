@@ -374,7 +374,7 @@ r.post("/:table", ah(async (req, res) => {
       const row: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(raw)) {
         if (!m.cols.get(table)!.has(k)) continue;
-        row[k] = v === undefined ? null : v;
+        row[k] = v === undefined ? null : coerceValue(v);
       }
       if (hasId && !row.id) row.id = newId();
       const cols = Object.keys(row);

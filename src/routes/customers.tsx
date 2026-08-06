@@ -18,7 +18,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { KycUpload } from "@/components/KycUpload";
 import { CustomerDetailDialog } from "@/components/CustomerDetailDialog";
+import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";
+
+const CLIENT_CSV_COLUMNS = [
+  "customer_number", "full_name", "customer_type", "national_id", "email", "phone",
+  "address", "city", "occupation", "monthly_income", "kyc_status", "credit_score", "is_active", "created_at",
+];
+
 
 export const Route = createFileRoute("/customers")({
   head: () => ({

@@ -168,6 +168,43 @@ function LoansPage() {
     );
   });
 
+  // CSV import — loans land as drafts, matched to an existing client by customer_number or national_id.
+  const importLoans = async (rows: Record<string, string>[]): Promise<ImportResult> => {
+    const num = (v?: string) => Number((v ?? "").replace(/,/g, ""));
+    let inserted = 0, skipped = 0;
+    const errors: string[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const line = i + 2;
+      const key = (r.customer_number || r.national_id || "").trim();
+      const principal = num(r.principal);
+      if (!key || !(principal > 0)) { skipped++; errors.push(`Row ${line}: customer_number (or national_id) and a positive principal are required`); continue; }
+      try {
+        const col = r.customer_number ? "customer_number" : "national_id";
+        const { data: cust } = await sql.from("customers").select("id").eq(col, key).limit(1);
+        if (!cust || !cust.length) { skipped++; errors.push(`Row ${line}: no client found for ${key}`); continue; }
+        const { error } = await sql.from("loans").insert({
+          loan_number: (r.loan_number || "").trim() || "L" + Date.now().toString().slice(-9) + i,
+          customer_id: (cust[0] as any).id,
+          principal,
+          interest_rate: Number(r.interest_rate) || 0.2,
+          term_months: Number(r.term_months) || 1,
+          method: ["flat", "reducing_balance", "daily_accrual"].includes(r.method) ? r.method : "daily_accrual",
+          status: "draft",
+          outstanding_balance: principal,
+          purpose: r.purpose?.trim() || null,
+          created_by: user!.id,
+        });
+        if (error) throw error;
+        inserted++;
+      } catch (e) {
+        skipped++;
+        errors.push(`Row ${line}: ${(e as Error).message}`);
+      }
+    }
+    return { inserted, skipped, errors };
+  };
+
 
   return (
     <AppShell>

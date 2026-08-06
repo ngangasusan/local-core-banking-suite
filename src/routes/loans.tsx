@@ -175,9 +175,30 @@ function LoansPage() {
         <PageHeader
           title="Loans"
           description="Lifecycle: Draft → Pending → Approved → Disbursed → Active → Closed."
-          actions={canCreate && (
+          actions={(
+            <div className="flex gap-2">
+            <ImportExport
+              entity="loans"
+              columns={LOAN_CSV_COLUMNS}
+              exportRows={async () => {
+                const { data } = await sql
+                  .from("loans")
+                  .select("*, customer:customers!loans_customer_fk(full_name, customer_number)")
+                  .order("created_at", { ascending: false })
+                  .limit(5000);
+                return ((data ?? []) as any[]).map((l) => ({
+                  ...l,
+                  customer_name: l.customer?.full_name ?? "",
+                  customer_number: l.customer?.customer_number ?? "",
+                }));
+              }}
+              onImport={importLoans}
+              onImported={() => qc.invalidateQueries({ queryKey: ["loans"] })}
+            />
+            {canCreate && (
             <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSelectedCustomer(""); }}>
               <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />New loan</Button></DialogTrigger>
+
               <DialogContent className="max-w-xl">
                 <DialogHeader><DialogTitle>Loan application (saved as draft)</DialogTitle></DialogHeader>
                 <form className="grid grid-cols-2 gap-4" onSubmit={(e) => { e.preventDefault(); createMut.mutate(new FormData(e.currentTarget)); }}>

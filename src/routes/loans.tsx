@@ -118,9 +118,18 @@ function LoansPage() {
 
   const approve = useMutation({
     mutationFn: async (id: string) => {
+      const { data: check } = await sql
+        .from("loans")
+        .select("customer:customers!loans_customer_fk(full_name, kyc_status)")
+        .eq("id", id)
+        .maybeSingle();
+      const cust = (check as any)?.customer;
+      if (cust && cust.kyc_status !== "verified")
+        throw new Error(`${cust.full_name} is not KYC-verified yet — verify the client before approving.`);
       const { error } = await sql.from("loans").update({ status: "approved", approved_by: user!.id }).eq("id", id);
       if (error) throw error;
     },
+
     onSuccess: () => { toast.success("Loan approved"); qc.invalidateQueries({ queryKey: ["loans"] }); },
     onError: (e: Error) => toast.error(e.message),
   });

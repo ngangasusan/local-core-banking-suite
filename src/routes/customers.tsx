@@ -281,7 +281,9 @@ function CustomersPage() {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           }
+
         />
 
         <div className="bg-card border border-border rounded-xl">

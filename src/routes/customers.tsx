@@ -18,7 +18,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { KycUpload } from "@/components/KycUpload";
 import { CustomerDetailDialog } from "@/components/CustomerDetailDialog";
+import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";
+
+const CLIENT_CSV_COLUMNS = [
+  "customer_number", "full_name", "customer_type", "national_id", "email", "phone",
+  "address", "city", "occupation", "monthly_income", "kyc_status", "credit_score", "is_active", "created_at",
+];
+
 
 export const Route = createFileRoute("/customers")({
   head: () => ({
@@ -186,7 +193,51 @@ function CustomersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // CSV import — one row per client. Existing national IDs / phones are skipped.
+  const importClients = async (rows: Record<string, string>[]): Promise<ImportResult> => {
+    const num = (v?: string) => {
+      const n = Number((v ?? "").replace(/,/g, ""));
+      return v && Number.isFinite(n) ? n : null;
+    };
+    let inserted = 0, skipped = 0;
+    const errors: string[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const line = i + 2;
+      const full_name = (r.full_name ?? "").trim();
+      const national_id = (r.national_id ?? "").trim();
+      if (!full_name || !national_id) { skipped++; errors.push(`Row ${line}: full_name and national_id are required`); continue; }
+      try {
+        const orParts = [`national_id.eq.${national_id}`];
+        if (r.phone) orParts.push(`phone.eq.${r.phone.trim()}`);
+        const { data: dupe } = await sql.from("customers").select("id").or(orParts.join(",")).limit(1);
+        if (dupe && dupe.length) { skipped++; errors.push(`Row ${line}: ${full_name} — national ID or phone already registered`); continue; }
+        const type = ["individual", "sme", "corporate"].includes(r.customer_type) ? r.customer_type : "individual";
+        const { error } = await sql.from("customers").insert({
+          customer_number: (r.customer_number || "").trim() || "C" + Date.now().toString().slice(-9) + i,
+          full_name,
+          customer_type: type,
+          national_id,
+          email: r.email?.trim() || null,
+          phone: r.phone?.trim() || null,
+          address: r.address?.trim() || null,
+          city: r.city?.trim() || null,
+          occupation: r.occupation?.trim() || null,
+          monthly_income: num(r.monthly_income),
+          created_by: user!.id,
+        });
+        if (error) throw error;
+        inserted++;
+      } catch (e) {
+        skipped++;
+        errors.push(`Row ${line}: ${full_name} — ${(e as Error).message}`);
+      }
+    }
+    return { inserted, skipped, errors };
+  };
+
   const canDelete = hasRole("admin") || hasRole("super_admin");
+
 
   if (loading || !user) return null;
 
@@ -197,12 +248,24 @@ function CustomersPage() {
           title="Customers"
           description="Individuals, SMEs and corporate clients."
           actions={
+            <div className="flex gap-2">
+            <ImportExport
+              entity="clients"
+              columns={CLIENT_CSV_COLUMNS}
+              exportRows={async () => {
+                const { data } = await sql.from("customers").select("*").order("created_at", { ascending: false }).limit(5000);
+                return (data ?? []) as Record<string, unknown>[];
+              }}
+              onImport={importClients}
+              onImported={() => qc.invalidateQueries({ queryKey: ["customers"] })}
+            />
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" /> New customer
                 </Button>
               </DialogTrigger>
+
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create customer</DialogTitle>
@@ -269,7 +332,9 @@ function CustomersPage() {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           }
+
         />
 
         <div className="bg-card border border-border rounded-xl">

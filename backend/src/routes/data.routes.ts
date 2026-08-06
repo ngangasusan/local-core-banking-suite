@@ -320,6 +320,32 @@ function assertWritable(table: string) {
   if (READ_ONLY.has(table)) throw new HttpError(403, `read_only_table:${table}`);
 }
 
+// MySQL DATETIME columns reject ISO-8601 strings ("2026-08-04T12:36:30.698Z").
+// The frontend sends `new Date().toISOString()`, so normalise any such value to
+// the MySQL literal form in UTC before it reaches the driver.
+const ISO_DT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/;
+function coerceValue(v: unknown): unknown {
+  if (typeof v === "string" && ISO_DT.test(v)) {
+    const d = new Date(v);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 23).replace("T", " ");
+  }
+  return v;
+}
+
+// Loans may not move past application state unless the client's KYC is verified.
+const LOAN_GATED_STATUSES = new Set(["approved", "disbursed", "active"]);
+async function assertCustomerVerified(loanIds: string[], status: unknown) {
+  if (!loanIds.length || typeof status !== "string" || !LOAN_GATED_STATUSES.has(status)) return;
+  const rows = await query<RowDataPacket & { kyc_status: string; full_name: string }>(
+    `SELECT c.kyc_status, c.full_name FROM loans l JOIN customers c ON c.id = l.customer_id
+      WHERE l.id IN (${loanIds.map(() => "?").join(",")})`,
+    loanIds
+  );
+  const bad = rows.find((x) => x.kyc_status !== "verified");
+  if (bad) throw new HttpError(409, `client_not_verified:${bad.full_name}`);
+}
+
+
 async function reselect(table: string, ids: string[], select: string) {
   if (!ids.length) return [];
   const m = await meta();
@@ -348,7 +374,7 @@ r.post("/:table", ah(async (req, res) => {
       const row: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(raw)) {
         if (!m.cols.get(table)!.has(k)) continue;
-        row[k] = v === undefined ? null : v;
+        row[k] = v === undefined ? null : coerceValue(v);
       }
       if (hasId && !row.id) row.id = newId();
       const cols = Object.keys(row);
@@ -378,7 +404,7 @@ r.patch("/:table", ah(async (req, res) => {
   const params: unknown[] = [];
   const patch: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(req.body ?? {})) {
-    if (m.cols.get(table)!.has(k) && k !== "id") patch[k] = v === undefined ? null : v;
+    if (m.cols.get(table)!.has(k) && k !== "id") patch[k] = v === undefined ? null : coerceValue(v);
   }
   const cols = Object.keys(patch);
   if (!cols.length) throw new HttpError(400, "no_valid_columns");
@@ -394,8 +420,10 @@ r.patch("/:table", ah(async (req, res) => {
       `SELECT ${q("id")} FROM ${q(table)} ${where}`, whereParams
     )).map((x) => x.id);
   }
+  if (table === "loans") await assertCustomerVerified(ids, patch.status);
   await exec(`UPDATE ${q(table)} SET ${cols.map((c) => `${q(c)} = ?`).join(", ")} ${where}`,
     [...params, ...whereParams]);
+
   const rows = req.query.select ? await reselect(table, ids, String(req.query.select)) : [];
   res.json({ rows, count: ids.length });
 }));

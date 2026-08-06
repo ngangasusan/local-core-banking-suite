@@ -15,8 +15,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RepaymentDialog } from "@/components/RepaymentDialog";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
 import { computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
+import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";
 import { fmtKES as _fmtKES } from "@/lib/format";
+
+const LOAN_CSV_COLUMNS = [
+  "loan_number", "customer_number", "customer_name", "principal", "interest_rate", "term_months",
+  "method", "status", "outstanding_balance", "late_fees", "disbursement_date", "due_date", "purpose", "created_at",
+];
+
 
 export const Route = createFileRoute("/loans")({
   head: () => ({ meta: [{ title: "Loans — CoreBank" }, { name: "description", content: "Loan origination, approval and disbursement." }] }),
@@ -43,7 +50,7 @@ function LoansPage() {
     queryFn: async () => {
       const { data, error } = await sql
         .from("loans")
-        .select("*, customer:customers!loans_customer_fk(full_name, customer_number)")
+        .select("*, customer:customers!loans_customer_fk(full_name, customer_number, kyc_status)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
@@ -111,9 +118,18 @@ function LoansPage() {
 
   const approve = useMutation({
     mutationFn: async (id: string) => {
+      const { data: check } = await sql
+        .from("loans")
+        .select("customer:customers!loans_customer_fk(full_name, kyc_status)")
+        .eq("id", id)
+        .maybeSingle();
+      const cust = (check as any)?.customer;
+      if (cust && cust.kyc_status !== "verified")
+        throw new Error(`${cust.full_name} is not KYC-verified yet — verify the client before approving.`);
       const { error } = await sql.from("loans").update({ status: "approved", approved_by: user!.id }).eq("id", id);
       if (error) throw error;
     },
+
     onSuccess: () => { toast.success("Loan approved"); qc.invalidateQueries({ queryKey: ["loans"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -152,6 +168,43 @@ function LoansPage() {
     );
   });
 
+  // CSV import — loans land as drafts, matched to an existing client by customer_number or national_id.
+  const importLoans = async (rows: Record<string, string>[]): Promise<ImportResult> => {
+    const num = (v?: string) => Number((v ?? "").replace(/,/g, ""));
+    let inserted = 0, skipped = 0;
+    const errors: string[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const line = i + 2;
+      const key = (r.customer_number || r.national_id || "").trim();
+      const principal = num(r.principal);
+      if (!key || !(principal > 0)) { skipped++; errors.push(`Row ${line}: customer_number (or national_id) and a positive principal are required`); continue; }
+      try {
+        const col = r.customer_number ? "customer_number" : "national_id";
+        const { data: cust } = await sql.from("customers").select("id").eq(col, key).limit(1);
+        if (!cust || !cust.length) { skipped++; errors.push(`Row ${line}: no client found for ${key}`); continue; }
+        const { error } = await sql.from("loans").insert({
+          loan_number: (r.loan_number || "").trim() || "L" + Date.now().toString().slice(-9) + i,
+          customer_id: (cust[0] as any).id,
+          principal,
+          interest_rate: Number(r.interest_rate) || 0.2,
+          term_months: Number(r.term_months) || 1,
+          method: ["flat", "reducing_balance", "daily_accrual"].includes(r.method) ? r.method : "daily_accrual",
+          status: "draft",
+          outstanding_balance: principal,
+          purpose: r.purpose?.trim() || null,
+          created_by: user!.id,
+        });
+        if (error) throw error;
+        inserted++;
+      } catch (e) {
+        skipped++;
+        errors.push(`Row ${line}: ${(e as Error).message}`);
+      }
+    }
+    return { inserted, skipped, errors };
+  };
+
 
   return (
     <AppShell>
@@ -159,9 +212,30 @@ function LoansPage() {
         <PageHeader
           title="Loans"
           description="Lifecycle: Draft → Pending → Approved → Disbursed → Active → Closed."
-          actions={canCreate && (
+          actions={(
+            <div className="flex gap-2">
+            <ImportExport
+              entity="loans"
+              columns={LOAN_CSV_COLUMNS}
+              exportRows={async () => {
+                const { data } = await sql
+                  .from("loans")
+                  .select("*, customer:customers!loans_customer_fk(full_name, customer_number)")
+                  .order("created_at", { ascending: false })
+                  .limit(5000);
+                return ((data ?? []) as any[]).map((l) => ({
+                  ...l,
+                  customer_name: l.customer?.full_name ?? "",
+                  customer_number: l.customer?.customer_number ?? "",
+                }));
+              }}
+              onImport={importLoans}
+              onImported={() => qc.invalidateQueries({ queryKey: ["loans"] })}
+            />
+            {canCreate && (
             <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSelectedCustomer(""); }}>
               <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />New loan</Button></DialogTrigger>
+
               <DialogContent className="max-w-xl">
                 <DialogHeader><DialogTitle>Loan application (saved as draft)</DialogTitle></DialogHeader>
                 <form className="grid grid-cols-2 gap-4" onSubmit={(e) => { e.preventDefault(); createMut.mutate(new FormData(e.currentTarget)); }}>
@@ -222,7 +296,10 @@ function LoansPage() {
                 </form>
               </DialogContent>
             </Dialog>
+            )}
+            </div>
           )}
+
         />
 
         <LoanStats loans={loans} />
@@ -293,17 +370,24 @@ function LoansPage() {
                     <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex gap-1 flex-wrap justify-end">
-                        {canCreate && l.status === "draft" && isCreator && (
-                          <Button size="sm" variant="outline" onClick={() => submit.mutate(l.id)}>Submit</Button>
+                        {canCreate && l.status === "draft" && (
+                          <Button size="sm" variant="outline" disabled={submit.isPending} onClick={() => submit.mutate(l.id)}>Submit</Button>
                         )}
                         {canApprove && l.status === "pending" && (!isCreator || hasRole("super_admin")) && (
                           <>
-                            <Button size="sm" variant="outline" onClick={() => approve.mutate(l.id)}>
-                              Approve{isCreator && hasRole("super_admin") ? " (bypass)" : ""}
-                            </Button>
+                            {l.customer?.kyc_status === "verified" ? (
+                              <Button size="sm" variant="outline" onClick={() => approve.mutate(l.id)}>
+                                Approve{isCreator && hasRole("super_admin") ? " (bypass)" : ""}
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-warning-foreground italic" title="Client KYC must be verified before approval">
+                                client not verified
+                              </span>
+                            )}
                             <Button size="sm" variant="ghost" onClick={() => setRejectFor(l.id)}>Reject</Button>
                           </>
                         )}
+
                         {canApprove && l.status === "pending" && isCreator && !hasRole("super_admin") && (
                           <span className="text-xs text-muted-foreground italic">awaiting checker</span>
                         )}

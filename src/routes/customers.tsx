@@ -197,12 +197,24 @@ function CustomersPage() {
           title="Customers"
           description="Individuals, SMEs and corporate clients."
           actions={
+            <div className="flex gap-2">
+            <ImportExport
+              entity="clients"
+              columns={CLIENT_CSV_COLUMNS}
+              exportRows={async () => {
+                const { data } = await sql.from("customers").select("*").order("created_at", { ascending: false }).limit(5000);
+                return (data ?? []) as Record<string, unknown>[];
+              }}
+              onImport={importClients}
+              onImported={() => qc.invalidateQueries({ queryKey: ["customers"] })}
+            />
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" /> New customer
                 </Button>
               </DialogTrigger>
+
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create customer</DialogTitle>

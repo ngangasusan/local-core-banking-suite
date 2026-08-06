@@ -50,7 +50,7 @@ function LoansPage() {
     queryFn: async () => {
       const { data, error } = await sql
         .from("loans")
-        .select("*, customer:customers!loans_customer_fk(full_name, customer_number)")
+        .select("*, customer:customers!loans_customer_fk(full_name, customer_number, kyc_status)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;

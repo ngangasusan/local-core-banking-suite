@@ -48,7 +48,7 @@ const NAV: NavItem[] = [
   { to: "/loans", label: "Loans", icon: Banknote },
   { to: "/loan-products", label: "Loan Products", icon: Scale },
   { to: "/accounts", label: "Deposits", icon: Wallet },
-  { to: "/transactions", label: "Loan Transactions", icon: ArrowLeftRight },
+  { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/arrears", label: "Arrears", icon: AlertTriangle },
   { to: "/collections", label: "Collections", icon: HandCoins },
   { to: "/audit", label: "Activities", icon: ShieldCheck, requirePrivileged: true },

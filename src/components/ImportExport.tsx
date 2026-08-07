@@ -25,24 +25,29 @@ export function ImportExport({ entity, columns, exportRows, onImport, onImported
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
 
-  const doExport = async () => {
+  const doExport = async (format: "csv" | "xlsx") => {
     setBusy(true);
     try {
       const rows = await exportRows();
       if (!rows.length) { toast.info(`No ${entity} to export`); return; }
-      downloadCSV(`${entity}-${csvTimestamp()}.csv`, toCSV(rows, columns));
+      const name = `${entity}-${csvTimestamp()}`;
+      if (format === "xlsx") downloadXLSX(`${name}.xlsx`, rows, columns);
+      else downloadCSV(`${name}.csv`, toCSV(rows, columns));
       toast.success(`Exported ${rows.length} ${entity}`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally { setBusy(false); }
   };
 
-  const doTemplate = () => downloadCSV(`${entity}-import-template.csv`, toCSV([], columns));
+  const doTemplate = (format: "csv" | "xlsx") =>
+    format === "xlsx"
+      ? downloadXLSX(`${entity}-import-template.xlsx`, [], columns)
+      : downloadCSV(`${entity}-import-template.csv`, toCSV([], columns));
 
   const handleFile = async (file: File) => {
     setBusy(true);
     try {
-      const rows = parseCSV(await file.text());
+      const rows = await parseSpreadsheet(file);
       if (!rows.length) { toast.error("The file has no data rows"); return; }
       const res = await onImport(rows);
       setResult(res);

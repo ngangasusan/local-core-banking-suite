@@ -29,7 +29,7 @@ function DashboardPage() {
       const [c, a, l, t] = await Promise.all([
         sql.from("customers").select("*", { count: "exact", head: true }),
         sql.from("accounts").select("balance"),
-        sql.from("loan_portfolio").select("outstanding_balance,status"),
+        sql.from("loans").select("outstanding_balance,status").in("status", ["disbursed", "active", "in_arrears"]),
         sql.from("transactions").select("amount,created_at").gte("created_at", new Date(Date.now() - 86400000).toISOString()),
       ]);
       const totalDeposits = (a.data ?? []).reduce((s, r) => s + Number(r.balance || 0), 0);

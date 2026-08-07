@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { sql } from "@/lib/sql-client";
+import { apiFetch } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -61,44 +62,16 @@ function TxnPage() {
       const d = Object.fromEntries(fd.entries()) as Record<string, string>;
       const amount = Number(d.amount);
       if (amount <= 0) throw new Error("Amount must be positive");
-      const reference = "TX" + Date.now();
-
-
-      const acct = accounts.find((a) => a.id === d.account_id);
-      if (!acct) throw new Error("Account not found");
-      const curBal = Number(acct.balance);
-      let newBal = curBal;
-      if (type === "deposit") newBal = curBal + amount;
-      else if (type === "withdrawal") {
-        if (curBal < amount) throw new Error("Insufficient balance");
-        newBal = curBal - amount;
-      }
-
-      // Update primary account
-      const { error: u1 } = await sql.from("accounts").update({ balance: newBal }).eq("id", d.account_id);
-      if (u1) throw u1;
-
-      // Transfer: update counterparty
-      let counterparty_account_id: string | null = null;
-      if (type === "transfer") {
-        const counter = accounts.find((a) => a.id === d.counterparty_account_id);
-        if (!counter) throw new Error("Destination account not found");
-        if (curBal < amount) throw new Error("Insufficient balance");
-        await sql.from("accounts").update({ balance: curBal - amount }).eq("id", d.account_id);
-        await sql.from("accounts").update({ balance: Number(counter.balance) + amount }).eq("id", d.counterparty_account_id);
-        counterparty_account_id = d.counterparty_account_id;
-      }
-
-      const { error } = await sql.from("transactions").insert({
-        reference,
-        txn_type: type,
-        amount,
-        account_id: d.account_id,
-        counterparty_account_id,
-        description: d.description || null,
-        performed_by: user!.id,
+      await apiFetch("/transactions", {
+        method: "POST",
+        body: {
+          txn_type: type,
+          amount,
+          account_id: d.account_id,
+          counterparty_account_id: type === "transfer" ? d.counterparty_account_id : null,
+          description: d.description || null,
+        },
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Transaction posted");

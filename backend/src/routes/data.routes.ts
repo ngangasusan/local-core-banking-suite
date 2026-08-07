@@ -133,10 +133,15 @@ function parseSelect(sel: string): Parsed {
 
 const RESERVED = new Set(["select", "order", "limit", "offset", "count", "head", "or"]);
 
+const ISO_DT_FILTER = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/;
 function coerce(raw: string): unknown {
   if (raw === "null") return null;
   if (raw === "true") return true;
   if (raw === "false") return false;
+  if (ISO_DT_FILTER.test(raw)) {
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 23).replace("T", " ");
+  }
   return raw;
 }
 
@@ -150,10 +155,10 @@ function opClause(m: Awaited<ReturnType<typeof meta>>, table: string, col: strin
   switch (op) {
     case "eq": params.push(coerce(raw)); return `${c} <=> ?`;
     case "neq": params.push(coerce(raw)); return `NOT (${c} <=> ?)`;
-    case "gt": params.push(raw); return `${c} > ?`;
-    case "gte": params.push(raw); return `${c} >= ?`;
-    case "lt": params.push(raw); return `${c} < ?`;
-    case "lte": params.push(raw); return `${c} <= ?`;
+    case "gt": params.push(coerce(raw)); return `${c} > ?`;
+    case "gte": params.push(coerce(raw)); return `${c} >= ?`;
+    case "lt": params.push(coerce(raw)); return `${c} < ?`;
+    case "lte": params.push(coerce(raw)); return `${c} <= ?`;
     case "like": params.push(raw); return `${c} LIKE ?`;
     case "ilike": params.push(raw); return `LOWER(${c}) LIKE LOWER(?)`;
     case "is": return raw === "null" ? `${c} IS NULL` : (params.push(raw === "true" ? 1 : 0), `${c} = ?`);

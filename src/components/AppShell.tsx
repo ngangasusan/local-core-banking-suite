@@ -202,7 +202,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Desktop nav row */}
       <nav className="hidden md:block bg-card border-b border-border">
-        <div className="px-4 sm:px-6 flex items-center gap-1 overflow-x-auto">
+        <div
+          ref={navScrollRef}
+          onScroll={(e) => { navScrollLeft = e.currentTarget.scrollLeft; }}
+          className="px-4 sm:px-6 flex items-center gap-1 overflow-x-auto no-scrollbar"
+        >
           {visibleNav.map(({ to, label, icon: Icon }) => {
             const active = isActive(to);
             return (

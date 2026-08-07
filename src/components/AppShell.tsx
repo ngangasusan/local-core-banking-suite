@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -60,13 +60,20 @@ const NAV: NavItem[] = [
   { to: "/settings", label: "Administration", icon: Settings },
 ];
 
+// Keeps the top nav's horizontal scroll position stable across route changes.
+let navScrollLeft = 0;
+
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, roles, signOut, hasRole } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    if (navScrollRef.current) navScrollRef.current.scrollLeft = navScrollLeft;
+  }, [location.pathname]);
 
   const isAdmin = hasRole("admin") || hasRole("super_admin");
   const isPrivileged = isAdmin || hasRole("auditor");
@@ -107,6 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <div className="sticky top-0 z-40 shadow-sm">
       {/* Top brand bar */}
       <div className="h-14 bg-sidebar border-b border-sidebar-border flex items-center px-4 sm:px-6 gap-4">
         <Link to="/" className="flex items-center gap-2.5 shrink-0">
@@ -201,7 +209,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Desktop nav row */}
       <nav className="hidden md:block bg-card border-b border-border">
-        <div className="px-4 sm:px-6 flex items-center gap-1 overflow-x-auto">
+        <div
+          ref={navScrollRef}
+          onScroll={(e) => { navScrollLeft = e.currentTarget.scrollLeft; }}
+          className="px-4 sm:px-6 flex items-center gap-1 overflow-x-auto no-scrollbar"
+        >
           {visibleNav.map(({ to, label, icon: Icon }) => {
             const active = isActive(to);
             return (
@@ -252,6 +264,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </nav>
       )}
+      </div>
 
       <main className="flex-1 min-w-0">{children}</main>
     </div>

@@ -131,6 +131,7 @@ function LoanProductsPage() {
 
   return (
     <AppShell>
+      <div className="p-6 lg:p-10 max-w-7xl mx-auto">
       <PageHeader
         title="Loan Products"
         description="Define loan categories with their own limits, rates, fees, and rules. Products are referenced when creating loans."

@@ -107,6 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <div className="sticky top-0 z-40 shadow-sm">
       {/* Top brand bar */}
       <div className="h-14 bg-sidebar border-b border-sidebar-border flex items-center px-4 sm:px-6 gap-4">
         <Link to="/" className="flex items-center gap-2.5 shrink-0">

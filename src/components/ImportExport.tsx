@@ -65,7 +65,7 @@ export function ImportExport({ entity, columns, exportRows, onImport, onImported
       <input
         ref={fileRef}
         type="file"
-        accept=".csv,text/csv"
+        accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
       />
@@ -75,13 +75,16 @@ export function ImportExport({ entity, columns, exportRows, onImport, onImported
             <MoreVertical className="h-4 w-4 mr-2" />{busy ? "Working…" : "Import / Export"}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuLabel className="capitalize">{entity} data</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={doExport}><Download className="h-4 w-4 mr-2" />Export CSV</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Import CSV</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => doExport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-2" />Export Excel (.xlsx)</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => doExport("csv")}><Download className="h-4 w-4 mr-2" />Export CSV</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={doTemplate}><FileDown className="h-4 w-4 mr-2" />Download template</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Import (CSV or Excel)</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => doTemplate("xlsx")}><FileDown className="h-4 w-4 mr-2" />Excel template</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => doTemplate("csv")}><FileDown className="h-4 w-4 mr-2" />CSV template</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

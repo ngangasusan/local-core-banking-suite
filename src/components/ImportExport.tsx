@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
-import { Download, Upload, FileDown, MoreVertical } from "lucide-react";
+import { Download, Upload, FileDown, MoreVertical, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { parseCSV, toCSV, downloadCSV, csvTimestamp } from "@/lib/csv";
+import { parseSpreadsheet, toCSV, downloadCSV, downloadXLSX, csvTimestamp } from "@/lib/csv";
 
 export interface ImportResult { inserted: number; skipped: number; errors: string[] }
 

@@ -60,13 +60,20 @@ const NAV: NavItem[] = [
   { to: "/settings", label: "Administration", icon: Settings },
 ];
 
+// Keeps the top nav's horizontal scroll position stable across route changes.
+let navScrollLeft = 0;
+
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, roles, signOut, hasRole } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    if (navScrollRef.current) navScrollRef.current.scrollLeft = navScrollLeft;
+  }, [location.pathname]);
 
   const isAdmin = hasRole("admin") || hasRole("super_admin");
   const isPrivileged = isAdmin || hasRole("auditor");

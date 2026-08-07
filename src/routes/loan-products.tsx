@@ -288,6 +288,7 @@ function LoanProductsPage() {
           </form>
         </DialogContent>
       </Dialog>
+      </div>
     </AppShell>
   );
 }

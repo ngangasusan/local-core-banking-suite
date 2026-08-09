@@ -426,7 +426,7 @@ function LoansPage() {
             </tbody>
           </table>
           </div>
-          <Pagination page={page} pageSize={pageSize} total={filteredLoans.length} onPageChange={setPage} />
+          <Pagination page={safePage} pageSize={pageSize} total={filteredLoans.length} onPageChange={setPage} />
         </div>
 
       </div>

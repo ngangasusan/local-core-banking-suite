@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { sql } from "@/lib/sql-client";
 import { apiFetch } from "@/lib/api";
+import { Pagination } from "@/components/Pagination";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,8 @@ function TxnPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"deposit" | "withdrawal" | "transfer">("deposit");
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -56,6 +59,11 @@ function TxnPage() {
       return data ?? [];
     },
   });
+
+  const allTxns = (txns ?? []) as any[];
+  const totalPages = Math.max(Math.ceil(allTxns.length / pageSize), 1);
+  const safePage = Math.min(page, totalPages);
+  const pagedTxns = allTxns.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const post = useMutation({
     mutationFn: async (fd: FormData) => {
@@ -156,8 +164,8 @@ function TxnPage() {
               </tr>
             </thead>
             <tbody>
-              {txns.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-muted-foreground">No transactions yet.</td></tr>}
-              {txns.map((t) => (
+              {pagedTxns.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-muted-foreground">No transactions yet.</td></tr>}
+              {pagedTxns.map((t: any) => (
                 <tr key={t.id} className="border-t border-border hover:bg-muted/30">
                   <td className="px-4 py-3 font-mono text-xs">{t.reference}</td>
                   <td className="px-4 py-3 capitalize">{t.txn_type.replace("_", " ")}</td>
@@ -169,6 +177,7 @@ function TxnPage() {
               ))}
             </tbody>
           </table>
+          <Pagination page={safePage} pageSize={pageSize} total={allTxns.length} onPageChange={setPage} />
         </div>
       </div>
     </AppShell>

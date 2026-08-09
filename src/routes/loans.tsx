@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RepaymentDialog } from "@/components/RepaymentDialog";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
-import { computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
+import { computeTotalDue, loanDaysElapsed, isoDate, addDays } from "@/lib/loan-calc";
+import { Pagination } from "@/components/Pagination";
 import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";
 import { fmtKES as _fmtKES } from "@/lib/format";
@@ -40,9 +41,12 @@ function LoansPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
 
   const { data: loans = [] } = useQuery({
     queryKey: ["loans"],
@@ -145,8 +149,13 @@ function LoansPage() {
 
   const disburse = useMutation({
     mutationFn: async (id: string) => {
-      // Trigger sets due_date, auto-activates, and posts the disbursement journal entry.
-      const { error } = await sql.from("loans").update({ status: "disbursed" }).eq("id", id);
+      // Monthly term: due date is 30 days after the disbursement date.
+      const disbursement_date = isoDate(new Date());
+      const due_date = isoDate(addDays(new Date(disbursement_date + "T00:00:00"), 30));
+      const { error } = await sql
+        .from("loans")
+        .update({ status: "disbursed", disbursement_date, due_date, next_payment_date: due_date })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Loan disbursed"); qc.invalidateQueries({ queryKey: ["loans"] }); qc.invalidateQueries({ queryKey: ["dashboard-stats"] }); },
@@ -167,6 +176,11 @@ function LoansPage() {
       String(l.customer?.customer_number ?? "").toLowerCase().includes(s)
     );
   });
+  const totalPages = Math.max(Math.ceil(filteredLoans.length / pageSize), 1);
+  const safePage = Math.min(page, totalPages);
+  const pagedLoans = filteredLoans.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+
 
   // CSV import — loans land as drafts, matched to an existing client by customer_number or national_id.
   const importLoans = async (rows: Record<string, string>[]): Promise<ImportResult> => {
@@ -342,8 +356,8 @@ function LoansPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredLoans.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No loans match your filters.</td></tr>}
-              {filteredLoans.map((l) => {
+              {pagedLoans.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No loans match your filters.</td></tr>}
+              {pagedLoans.map((l) => {
                 const isCreator = l.created_by === user.id;
                 const principal = Number(l.principal);
                 const outstanding = Number(l.outstanding_balance);
@@ -413,6 +427,7 @@ function LoansPage() {
             </tbody>
           </table>
           </div>
+          <Pagination page={safePage} pageSize={pageSize} total={filteredLoans.length} onPageChange={setPage} />
         </div>
 
       </div>

@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { sql } from "@/lib/sql-client";
+import { Pagination } from "@/components/Pagination";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -68,17 +69,21 @@ function CustomersPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [user, loading, navigate]);
 
+  useEffect(() => { setPage(1); }, [search, kycFilter, activeFilter]);
+
   const { data: customers = [] } = useQuery({
     queryKey: ["customers", search, kycFilter, activeFilter],
     enabled: !!user,
     queryFn: async () => {
-      let q = sql.from("customers").select("*").order("created_at", { ascending: false }).limit(100);
+      let q = sql.from("customers").select("*").order("created_at", { ascending: false }).limit(1000);
       if (search) q = q.or(`full_name.ilike.%${search}%,customer_number.ilike.%${search}%,phone.ilike.%${search}%`);
       if (kycFilter !== "all") q = q.eq("kyc_status", kycFilter);
       if (activeFilter !== "all") q = q.eq("is_active", activeFilter === "active");
@@ -88,6 +93,10 @@ function CustomersPage() {
     },
   });
 
+
+  const totalPages = Math.max(Math.ceil((customers as any[]).length / pageSize), 1);
+  const safePage = Math.min(page, totalPages);
+  const pagedCustomers = (customers as any[]).slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const createMut = useMutation({
     mutationFn: async (form: FormData) => {
@@ -386,10 +395,10 @@ function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {customers.length === 0 && (
+                {pagedCustomers.length === 0 && (
                   <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No customers yet. Create your first one.</td></tr>
                 )}
-                {customers.map((c) => (
+                {pagedCustomers.map((c: any) => (
                   <tr key={c.id} className="border-t border-border hover:bg-muted/30 cursor-pointer" onClick={() => setDetailCustomer(c)}>
                     <td className="px-4 py-3 font-mono text-xs">{c.customer_number}</td>
                     <td className="px-4 py-3 font-medium">{c.full_name}</td>
@@ -412,6 +421,7 @@ function CustomersPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={safePage} pageSize={pageSize} total={(customers as any[]).length} onPageChange={setPage} />
         </div>
       </div>
 

@@ -46,6 +46,7 @@ function LoansPage() {
 
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
 
   const { data: loans = [] } = useQuery({
     queryKey: ["loans"],

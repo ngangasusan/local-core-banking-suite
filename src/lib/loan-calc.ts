@@ -79,3 +79,16 @@ export function loanDaysElapsed(disbursementDate: string | null): number {
   if (!disbursementDate) return 0;
   return daysBetween(disbursementDate, new Date());
 }
+
+/** Local-date ISO string (YYYY-MM-DD). */
+export function isoDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Add whole days to a date (returns a new Date). */
+export function addDays(d: Date, days: number): Date {
+  const out = new Date(d.getTime());
+  out.setDate(out.getDate() + days);
+  return out;
+}

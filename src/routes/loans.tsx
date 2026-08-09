@@ -175,6 +175,11 @@ function LoansPage() {
       String(l.customer?.customer_number ?? "").toLowerCase().includes(s)
     );
   });
+  const totalPages = Math.max(Math.ceil(filteredLoans.length / pageSize), 1);
+  const safePage = Math.min(page, totalPages);
+  const pagedLoans = filteredLoans.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+
 
   // CSV import — loans land as drafts, matched to an existing client by customer_number or national_id.
   const importLoans = async (rows: Record<string, string>[]): Promise<ImportResult> => {

@@ -41,6 +41,8 @@ function LoansPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
 
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
@@ -348,8 +350,8 @@ function LoansPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredLoans.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No loans match your filters.</td></tr>}
-              {filteredLoans.map((l) => {
+              {pagedLoans.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No loans match your filters.</td></tr>}
+              {pagedLoans.map((l) => {
                 const isCreator = l.created_by === user.id;
                 const principal = Number(l.principal);
                 const outstanding = Number(l.outstanding_balance);
@@ -419,6 +421,7 @@ function LoansPage() {
             </tbody>
           </table>
           </div>
+          <Pagination page={page} pageSize={pageSize} total={filteredLoans.length} onPageChange={setPage} />
         </div>
 
       </div>

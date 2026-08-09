@@ -145,8 +145,13 @@ function LoansPage() {
 
   const disburse = useMutation({
     mutationFn: async (id: string) => {
-      // Trigger sets due_date, auto-activates, and posts the disbursement journal entry.
-      const { error } = await sql.from("loans").update({ status: "disbursed" }).eq("id", id);
+      // Monthly term: due date is 30 days after the disbursement date.
+      const disbursement_date = isoDate(new Date());
+      const due_date = isoDate(addDays(new Date(disbursement_date + "T00:00:00"), 30));
+      const { error } = await sql
+        .from("loans")
+        .update({ status: "disbursed", disbursement_date, due_date, next_payment_date: due_date })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Loan disbursed"); qc.invalidateQueries({ queryKey: ["loans"] }); qc.invalidateQueries({ queryKey: ["dashboard-stats"] }); },

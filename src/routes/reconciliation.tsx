@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { sql } from "@/lib/sql-client";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
-import { fmtKES as _fmtKES } from "@/lib/format";
+import { fmtKES as _fmtKES, fmtDate } from "@/lib/format";
 
 export const Route = createFileRoute("/reconciliation")({
   head: () => ({ meta: [{ title: "Reconciliation — CoreBank" }, { name: "description", content: "Daily cash reconciliation between transactions, repayments, and the general ledger." }] }),
@@ -121,7 +121,7 @@ function ReconciliationPage() {
                 const ok = Math.abs(r.var_txn) < 0.01 && Math.abs(r.var_gl) < 0.01;
                 return (
                   <tr key={r.day} className="border-t border-border hover:bg-muted/30">
-                    <td className="px-4 py-3 text-xs">{new Date(r.day).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-xs">{fmtDate(r.day)}</td>
                     <td className="px-4 py-3 text-right font-mono">{fmt(r.transactions_cash)}</td>
                     <td className="px-4 py-3 text-right font-mono">{fmt(r.repayments_cash)}</td>
                     <td className="px-4 py-3 text-right font-mono">{fmt(r.gl_cash)}</td>

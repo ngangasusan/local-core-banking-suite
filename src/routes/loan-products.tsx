@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { fmtKES } from "@/lib/format";
+import { computeInterestBreakdown, rulesFromProduct, type InterestRules } from "@/lib/loan-calc";
 
 export const Route = createFileRoute("/loan-products")({
   head: () => ({ meta: [{ title: "Loan Products — CoreBank" }] }),
@@ -49,6 +50,11 @@ type ProductForm = {
   early_repayment_days: number;
   required_credit_score: number;
   is_active: boolean;
+  tier1_days: number;
+  tier2_days: number;
+  daily_per_1000: number;
+  monthly_days: number;
+  monthly_pct: number;
 };
 
 const empty: ProductForm = {
@@ -58,7 +64,9 @@ const empty: ProductForm = {
   daily_interest_rate: 0.02, late_fee_daily_pct: 0.01, grace_period_days: 0,
   mpesa_fee_threshold: 10000, mpesa_fee_amount: 0, early_repayment_days: 5,
   required_credit_score: 500, is_active: true,
+  tier1_days: 5, tier2_days: 14, daily_per_1000: 20, monthly_days: 30, monthly_pct: 0.3,
 };
+
 
 function LoanProductsPage() {
   const { user, loading, hasRole } = useAuth();
@@ -125,6 +133,12 @@ function LoanProductsPage() {
       mpesa_fee_threshold: Number(p.mpesa_fee_threshold), mpesa_fee_amount: Number(p.mpesa_fee_amount),
       early_repayment_days: p.early_repayment_days, required_credit_score: p.required_credit_score,
       is_active: p.is_active,
+      tier1_days: Number(p.tier1_days ?? 5),
+      tier2_days: Number(p.tier2_days ?? 14),
+      daily_per_1000: Number(p.daily_per_1000 ?? 20),
+      monthly_days: Number(p.monthly_days ?? 30),
+      monthly_pct: Number(p.monthly_pct ?? 0.3),
+
     });
     setOpen(true);
   };
@@ -277,7 +291,39 @@ function LoanProductsPage() {
               <Label>Required credit score</Label>
               <Input type="number" value={form.required_credit_score} onChange={(e) => setForm({ ...form, required_credit_score: Number(e.target.value) })} />
             </div>
+            <div className="col-span-2 border-t border-border pt-4">
+              <h4 className="text-sm font-semibold">Interest tiers</h4>
+              <p className="text-xs text-muted-foreground">
+                Tier 1 (0–{form.tier1_days}d): minimum {(form.min_principal_pct * 100).toFixed(0)}% of principal ·
+                Tier 2 ({form.tier1_days + 1}–{form.tier2_days}d): MAX(minimum, {form.daily_per_1000}/1,000 per day) ·
+                Tier 3 ({form.tier2_days + 1}d+): {(form.monthly_pct * 100).toFixed(0)}% per {form.monthly_days}-day month.
+              </p>
+            </div>
+            <div>
+              <Label>Tier 1 end day</Label>
+              <Input type="number" value={form.tier1_days} onChange={(e) => setForm({ ...form, tier1_days: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Tier 2 end day</Label>
+              <Input type="number" value={form.tier2_days} onChange={(e) => setForm({ ...form, tier2_days: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Daily charge per 1,000 (tier 2)</Label>
+              <Input type="number" step="0.01" value={form.daily_per_1000} onChange={(e) => setForm({ ...form, daily_per_1000: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Monthly period (days)</Label>
+              <Input type="number" value={form.monthly_days} onChange={(e) => setForm({ ...form, monthly_days: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Monthly rate (decimal, e.g. 0.3 = 30%)</Label>
+              <Input type="number" step="0.01" value={form.monthly_pct} onChange={(e) => setForm({ ...form, monthly_pct: Number(e.target.value) })} />
+            </div>
+            <div className="col-span-2">
+              <InterestPreview rules={rulesFromProduct(form)} />
+            </div>
             <div className="col-span-2 flex items-center gap-3">
+
               <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
               <Label>Active</Label>
             </div>
@@ -290,5 +336,31 @@ function LoanProductsPage() {
       </Dialog>
       </div>
     </AppShell>
+  );
+}
+
+function InterestPreview({ rules }: { rules: InterestRules }) {
+  const [principal, setPrincipal] = useState(10000);
+  const [days, setDays] = useState(10);
+  const b = computeInterestBreakdown(principal, days, rules);
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <Label className="text-xs">Test principal</Label>
+          <Input type="number" value={principal} onChange={(e) => setPrincipal(Number(e.target.value))} />
+        </div>
+        <div className="flex-1">
+          <Label className="text-xs">Days</Label>
+          <Input type="number" value={days} onChange={(e) => setDays(Number(e.target.value))} />
+        </div>
+      </div>
+      <ol className="text-xs text-muted-foreground list-decimal ml-4 space-y-0.5">
+        {b.steps.map((s, i) => (<li key={i}>{s}</li>))}
+      </ol>
+      <div className="text-sm font-medium">
+        Interest {fmtKES(b.interest)} · Total payable {fmtKES(principal + b.interest)}
+      </div>
+    </div>
   );
 }

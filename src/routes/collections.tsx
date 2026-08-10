@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fmtKES } from "@/lib/format";
+import { fmtKES, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { Phone, MessageSquare, MapPin, FileText, AlertTriangle, CalendarClock, ShieldAlert, RefreshCw } from "lucide-react";
 
@@ -191,7 +191,7 @@ function CollectionsPage() {
                       ) : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">
-                      {r.last_contact_at ? new Date(r.last_contact_at).toLocaleDateString() : "Never"}
+                      {r.last_contact_at ? fmtDate(r.last_contact_at) : "Never"}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <Button size="sm" variant="outline" onClick={() => setOpenLoan(r)}>Manage</Button>
@@ -626,7 +626,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
                   {restructures.length === 0 && <tr><td colSpan={5} className="text-center py-4 text-muted-foreground">No restructures.</td></tr>}
                   {restructures.map((r: any) => (
                     <tr key={r.id} className="border-t border-border">
-                      <td className="px-3 py-2 text-xs">{new Date(r.requested_at).toLocaleDateString()}</td>
+                      <td className="px-3 py-2 text-xs">{fmtDate(r.requested_at)}</td>
                       <td className="px-3 py-2 text-xs">{r.new_due_date}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{r.reason}</td>
                       <td className="px-3 py-2"><Badge>{r.status}</Badge></td>
@@ -666,7 +666,7 @@ function LoanCollectionDialog({ row, onClose }: { row: WorklistRow | null; onClo
                   {writeoffs.length === 0 && <tr><td colSpan={5} className="text-center py-4 text-muted-foreground">No write-offs.</td></tr>}
                   {writeoffs.map((w: any) => (
                     <tr key={w.id} className="border-t border-border">
-                      <td className="px-3 py-2 text-xs">{new Date(w.requested_at).toLocaleDateString()}</td>
+                      <td className="px-3 py-2 text-xs">{fmtDate(w.requested_at)}</td>
                       <td className="px-3 py-2 text-right font-mono">{fmtKES(Number(w.amount))}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{w.reason}</td>
                       <td className="px-3 py-2"><Badge variant={w.status === "applied" ? "default" : w.status === "rejected" ? "destructive" : "secondary"}>{w.status}</Badge></td>

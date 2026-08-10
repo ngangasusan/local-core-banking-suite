@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { fmtKES as _fmtKES } from "@/lib/format";
+import { fmtKES as _fmtKES, fmtDate } from "@/lib/format";
 
 type CustomerLite = {
   id: string;
@@ -205,7 +205,7 @@ export function CustomerDetailDialog({ customer, open, onOpenChange }: { custome
                     )}
                     <div className="p-2 text-xs">
                       <div className="font-medium truncate">{d.doc_type}</div>
-                      <div className="text-muted-foreground">{new Date(d.uploaded_at).toLocaleDateString()}</div>
+                      <div className="text-muted-foreground">{fmtDate(d.uploaded_at)}</div>
                     </div>
                   </a>
                 );

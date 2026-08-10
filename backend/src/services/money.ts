@@ -23,18 +23,56 @@ export function daysBetween(start: Date | string, end: Date | string): number {
   return d < 0 ? 0 : d;
 }
 
-/** Accrued interest: min 10% of principal, daily 20/1000 from day 1, cap 30% after 14 days. */
-export function computeInterest(principal: number, days: number): number {
-  if (principal <= 0) return 0;
-  const min = principal * 0.10;
-  const cap = principal * 0.30;
-  if (days > 14) return cap;
-  const daily = (principal / 1000) * 20;
-  let accrued = daily * Math.max(days, 1);
-  if (accrued < min) accrued = min;
-  if (accrued > cap) accrued = cap;
-  return accrued;
+export type InterestRules = {
+  tier1_days: number;
+  min_principal_pct: number;
+  tier2_days: number;
+  daily_per_1000: number;
+  monthly_days: number;
+  monthly_pct: number;
+};
+
+export const DEFAULT_INTEREST_RULES: InterestRules = {
+  tier1_days: 5,
+  min_principal_pct: 0.1,
+  tier2_days: 14,
+  daily_per_1000: 20,
+  monthly_days: 30,
+  monthly_pct: 0.3,
+};
+
+export function rulesFromProduct(p: any | null | undefined): InterestRules {
+  if (!p) return DEFAULT_INTEREST_RULES;
+  const n = (v: any, d: number) => (v === null || v === undefined || v === "" || isNaN(Number(v)) ? d : Number(v));
+  return {
+    tier1_days: n(p.tier1_days, 5),
+    min_principal_pct: n(p.min_principal_pct, 0.1),
+    tier2_days: n(p.tier2_days, 14),
+    daily_per_1000: n(p.daily_per_1000, 20),
+    monthly_days: n(p.monthly_days, 30),
+    monthly_pct: n(p.monthly_pct, 0.3),
+  };
 }
+
+/**
+ * Tiered interest:
+ *  0–5 days      → 10% minimum of principal
+ *  6–14 days     → MAX(10% minimum, 20 per 1,000 per day)
+ *  15+ days      → 30% of principal per started month
+ */
+export function computeInterest(principal: number, days: number, rules: InterestRules = DEFAULT_INTEREST_RULES): number {
+  if (principal <= 0) return 0;
+  const d = Math.max(days, 0);
+  const min = principal * rules.min_principal_pct;
+  if (d <= rules.tier1_days) return min;
+  if (d <= rules.tier2_days) {
+    const daily = (principal / 1000) * rules.daily_per_1000;
+    return Math.max(min, daily * d);
+  }
+  const months = Math.max(Math.ceil(d / rules.monthly_days), 1);
+  return principal * rules.monthly_pct * months;
+}
+
 
 /** 1% of principal per day past due. */
 export function computeLateFee(principal: number, daysPastDue: number): number {

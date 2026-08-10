@@ -23,18 +23,119 @@ export function daysBetween(start: Date | string, end: Date | string): number {
   return diff < 0 ? 0 : diff;
 }
 
-/** Accrued interest. Min 10% of principal; daily 20/1000 from day 1; cap 30% after 14 days. */
-export function computeInterest(principal: number, days: number): number {
-  if (principal <= 0) return 0;
-  const min = principal * 0.10;
-  const cap = principal * 0.30;
-  if (days > 14) return cap;
-  const daily = (principal / 1000) * 20;
-  let accrued = daily * Math.max(days, 1);
-  if (accrued < min) accrued = min;
-  if (accrued > cap) accrued = cap;
-  return accrued;
+/**
+ * Configurable tiered interest rules.
+ * Defaults mirror the house standard:
+ *  - Tier 1 (0–5 days): flat minimum, 10% of principal
+ *  - Tier 2 (6–14 days): MAX(10% minimum, 20 per 1,000 per day)
+ *  - Tier 3 (15–30 days): 30% of principal, charged per month (each further 30 days adds 30%)
+ */
+export type InterestRules = {
+  tier1_days: number;
+  min_principal_pct: number;
+  tier2_days: number;
+  daily_per_1000: number;
+  monthly_days: number;
+  monthly_pct: number;
+};
+
+export const DEFAULT_INTEREST_RULES: InterestRules = {
+  tier1_days: 5,
+  min_principal_pct: 0.1,
+  tier2_days: 14,
+  daily_per_1000: 20,
+  monthly_days: 30,
+  monthly_pct: 0.3,
+};
+
+/** Build rules from a loan_products row (falls back to defaults for missing columns). */
+export function rulesFromProduct(p: any | null | undefined): InterestRules {
+  if (!p) return DEFAULT_INTEREST_RULES;
+  const n = (v: any, d: number) => (v === null || v === undefined || v === "" || isNaN(Number(v)) ? d : Number(v));
+  return {
+    tier1_days: n(p.tier1_days, DEFAULT_INTEREST_RULES.tier1_days),
+    min_principal_pct: n(p.min_principal_pct, DEFAULT_INTEREST_RULES.min_principal_pct),
+    tier2_days: n(p.tier2_days, DEFAULT_INTEREST_RULES.tier2_days),
+    daily_per_1000: n(p.daily_per_1000, DEFAULT_INTEREST_RULES.daily_per_1000),
+    monthly_days: n(p.monthly_days, DEFAULT_INTEREST_RULES.monthly_days),
+    monthly_pct: n(p.monthly_pct, DEFAULT_INTEREST_RULES.monthly_pct),
+  };
 }
+
+export type InterestBreakdown = {
+  interest: number;
+  tier: 1 | 2 | 3;
+  tierLabel: string;
+  months: number;
+  steps: string[];
+};
+
+const money = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+/** Full interest breakdown with human-readable calculation steps. */
+export function computeInterestBreakdown(
+  principal: number,
+  days: number,
+  rules: InterestRules = DEFAULT_INTEREST_RULES,
+): InterestBreakdown {
+  if (principal <= 0) return { interest: 0, tier: 1, tierLabel: "—", months: 0, steps: ["No principal."] };
+  const d = Math.max(days, 0);
+  const min = principal * rules.min_principal_pct;
+  const pctLabel = (v: number) => `${(v * 100).toFixed(v * 100 % 1 === 0 ? 0 : 2)}%`;
+
+  if (d <= rules.tier1_days) {
+    return {
+      interest: min,
+      tier: 1,
+      tierLabel: `0–${rules.tier1_days} days`,
+      months: 0,
+      steps: [
+        `Days elapsed: ${d} → tier 1 (0–${rules.tier1_days} days)`,
+        `Minimum interest: ${money(principal)} × ${pctLabel(rules.min_principal_pct)} = ${money(min)}`,
+        `Interest charged: ${money(min)}`,
+      ],
+    };
+  }
+
+  if (d <= rules.tier2_days) {
+    const daily = (principal / 1000) * rules.daily_per_1000;
+    const accrued = daily * d;
+    const interest = Math.max(min, accrued);
+    return {
+      interest,
+      tier: 2,
+      tierLabel: `${rules.tier1_days + 1}–${rules.tier2_days} days`,
+      months: 0,
+      steps: [
+        `Days elapsed: ${d} → tier 2 (${rules.tier1_days + 1}–${rules.tier2_days} days)`,
+        `Daily charge: (${money(principal)} / 1,000) × ${rules.daily_per_1000} = ${money(daily)} per day`,
+        `Daily interest: ${money(daily)} × ${d} = ${money(accrued)}`,
+        `Minimum interest: ${money(principal)} × ${pctLabel(rules.min_principal_pct)} = ${money(min)}`,
+        `Interest charged: MAX(${money(min)}, ${money(accrued)}) = ${money(interest)}`,
+      ],
+    };
+  }
+
+  const months = Math.max(Math.ceil(d / rules.monthly_days), 1);
+  const interest = principal * rules.monthly_pct * months;
+  return {
+    interest,
+    tier: 3,
+    tierLabel: `${rules.tier2_days + 1}–${rules.monthly_days} days (monthly)`,
+    months,
+    steps: [
+      `Days elapsed: ${d} → tier 3 (${rules.tier2_days + 1}+ days, charged monthly)`,
+      `Months started: CEIL(${d} / ${rules.monthly_days}) = ${months}`,
+      `Interest: ${money(principal)} × ${pctLabel(rules.monthly_pct)} × ${months} = ${money(interest)}`,
+    ],
+  };
+}
+
+/** Accrued interest under the tiered rules. */
+export function computeInterest(principal: number, days: number, rules: InterestRules = DEFAULT_INTEREST_RULES): number {
+  return computeInterestBreakdown(principal, days, rules).interest;
+}
+
 
 /** Late penalty fee: 1% of principal per day past due (no cap). */
 export function computeLateFee(principal: number, daysPastDue: number): number {
@@ -56,12 +157,15 @@ export function computeTotalDue(
   principal: number,
   days: number,
   dueDate: string | null = null,
-): { interest: number; mpesa: number; lateFee: number; total: number } {
-  const interest = computeInterest(principal, days);
+  rules: InterestRules = DEFAULT_INTEREST_RULES,
+): { interest: number; mpesa: number; lateFee: number; total: number; breakdown: InterestBreakdown } {
+  const breakdown = computeInterestBreakdown(principal, days, rules);
+  const interest = breakdown.interest;
   const mpesa = days <= 5 ? mpesaSendCharge(principal) : 0;
   const lateFee = computeLateFee(principal, daysPastDue(dueDate));
-  return { interest, mpesa, lateFee, total: principal + interest + mpesa + lateFee };
+  return { interest, mpesa, lateFee, total: principal + interest + mpesa + lateFee, breakdown };
 }
+
 
 /** Aging bucket label for an outstanding loan. */
 export function agingBucket(dueDate: string | null, outstanding: number): "current" | "par_1_30" | "par_31_60" | "par_61_90" | "par_90_plus" {

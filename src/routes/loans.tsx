@@ -14,11 +14,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RepaymentDialog } from "@/components/RepaymentDialog";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
-import { computeTotalDue, loanDaysElapsed, isoDate, addDays } from "@/lib/loan-calc";
+import { computeTotalDue, loanDaysElapsed, isoDate, addDays, rulesFromProduct } from "@/lib/loan-calc";
 import { Pagination } from "@/components/Pagination";
 import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";
-import { fmtKES as _fmtKES } from "@/lib/format";
+import { fmtKES as _fmtKES, fmtDate } from "@/lib/format";
 
 const LOAN_CSV_COLUMNS = [
   "loan_number", "customer_number", "customer_name", "principal", "interest_rate", "term_months",
@@ -39,6 +39,7 @@ function LoansPage() {
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [detailLoan, setDetailLoan] = useState<any | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -71,6 +72,15 @@ function LoansPage() {
     },
   });
 
+  const { data: loanProducts = [] } = useQuery({
+    queryKey: ["loan-products-active"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await sql.from("loan_products" as any).select("*").eq("is_active", true).order("name");
+      return (data ?? []) as any[];
+    },
+  });
+
   const { data: applicantInfo } = useQuery({
     queryKey: ["applicant-info", selectedCustomer],
     enabled: !!selectedCustomer,
@@ -99,6 +109,7 @@ function LoansPage() {
         interest_rate: Number(d.interest_rate),
         term_months: Number(d.term_months),
         method: d.method as "flat" | "reducing_balance" | "amortized",
+        product_id: d.product_id || null,
         purpose: d.purpose || null,
         projected_payment_date: d.projected_payment_date || null,
         outstanding_balance: principal,
@@ -301,6 +312,23 @@ function LoansPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Loan product</Label>
+                    <Select name="product_id" value={selectedProduct} onValueChange={setSelectedProduct}>
+                      <SelectTrigger><SelectValue placeholder="Default rules (no product)" /></SelectTrigger>
+                      <SelectContent>
+                        {loanProducts.map((p: any) => (<SelectItem key={p.id} value={p.id}>{p.name} ({p.code})</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    {(() => {
+                      const r = rulesFromProduct(loanProducts.find((p: any) => p.id === selectedProduct));
+                      return (
+                        <p className="text-xs text-muted-foreground">
+                          0–{r.tier1_days}d: {(r.min_principal_pct * 100).toFixed(0)}% minimum · {r.tier1_days + 1}–{r.tier2_days}d: MAX(minimum, {r.daily_per_1000}/1,000 per day) · {r.tier2_days + 1}d+: {(r.monthly_pct * 100).toFixed(0)}% per {r.monthly_days}-day month
+                        </p>
+                      );
+                    })()}
+                  </div>
                   <div className="space-y-2"><Label>Projected payment date</Label><Input name="projected_payment_date" type="date" /></div>
                   <div className="space-y-2"><Label>&nbsp;</Label><div className="text-xs text-muted-foreground">Officer's expected repayment date.</div></div>
                   <div className="col-span-2 space-y-2"><Label>Purpose</Label><Textarea name="purpose" rows={2} /></div>
@@ -363,7 +391,8 @@ function LoansPage() {
                 const outstanding = Number(l.outstanding_balance);
                 const isOpen = ["active", "in_arrears", "disbursed"].includes(l.status);
                 const days = isOpen ? loanDaysElapsed(l.disbursement_date) : 0;
-                const { total } = isOpen ? computeTotalDue(principal, days, l.due_date) : { total: principal };
+                const rules = rulesFromProduct(loanProducts.find((p: any) => p.id === l.product_id));
+                const { total } = isOpen ? computeTotalDue(principal, days, l.due_date, rules) : { total: principal };
                 // If loan already partially paid, remaining to settle = total - (principal - outstanding)
                 const paid = Math.max(principal - outstanding, 0);
                 const remaining = isOpen ? Math.max(total - paid, 0) : outstanding;
@@ -378,8 +407,8 @@ function LoansPage() {
                       <div className="font-semibold">{fmt(remaining)}</div>
                       {isOpen && <div className="text-[10px] text-muted-foreground">of {fmt(total)} · day {days}</div>}
                     </td>
-                    <td className="px-4 py-3 text-xs">{disbursedOn ?? "—"}</td>
-                    <td className={"px-4 py-3 text-xs " + (isOverdue ? "text-destructive font-medium" : "")}>{l.due_date ?? "—"}{isOverdue && " ⚠"}</td>
+                    <td className="px-4 py-3 text-xs">{fmtDate(disbursedOn)}</td>
+                    <td className={"px-4 py-3 text-xs " + (isOverdue ? "text-destructive font-medium" : "")}>{fmtDate(l.due_date)}{isOverdue && " ⚠"}</td>
 
                     <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>

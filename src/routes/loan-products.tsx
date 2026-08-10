@@ -49,6 +49,11 @@ type ProductForm = {
   early_repayment_days: number;
   required_credit_score: number;
   is_active: boolean;
+  tier1_days: number;
+  tier2_days: number;
+  daily_per_1000: number;
+  monthly_days: number;
+  monthly_pct: number;
 };
 
 const empty: ProductForm = {
@@ -58,7 +63,9 @@ const empty: ProductForm = {
   daily_interest_rate: 0.02, late_fee_daily_pct: 0.01, grace_period_days: 0,
   mpesa_fee_threshold: 10000, mpesa_fee_amount: 0, early_repayment_days: 5,
   required_credit_score: 500, is_active: true,
+  tier1_days: 5, tier2_days: 14, daily_per_1000: 20, monthly_days: 30, monthly_pct: 0.3,
 };
+
 
 function LoanProductsPage() {
   const { user, loading, hasRole } = useAuth();

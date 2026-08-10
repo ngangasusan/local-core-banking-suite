@@ -391,7 +391,8 @@ function LoansPage() {
                 const outstanding = Number(l.outstanding_balance);
                 const isOpen = ["active", "in_arrears", "disbursed"].includes(l.status);
                 const days = isOpen ? loanDaysElapsed(l.disbursement_date) : 0;
-                const { total } = isOpen ? computeTotalDue(principal, days, l.due_date) : { total: principal };
+                const rules = rulesFromProduct(loanProducts.find((p: any) => p.id === l.product_id));
+                const { total } = isOpen ? computeTotalDue(principal, days, l.due_date, rules) : { total: principal };
                 // If loan already partially paid, remaining to settle = total - (principal - outstanding)
                 const paid = Math.max(principal - outstanding, 0);
                 const remaining = isOpen ? Math.max(total - paid, 0) : outstanding;

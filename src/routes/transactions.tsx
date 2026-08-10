@@ -29,7 +29,7 @@ function TxnPage() {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"deposit" | "withdrawal" | "transfer">("deposit");
   const [page, setPage] = useState(1);
-  const pageSize = 25;
+  const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -177,7 +177,7 @@ function TxnPage() {
               ))}
             </tbody>
           </table>
-          <Pagination page={safePage} pageSize={pageSize} total={allTxns.length} onPageChange={setPage} />
+          <Pagination page={safePage} pageSize={pageSize} total={allTxns.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
       </div>
     </AppShell>

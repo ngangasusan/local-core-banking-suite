@@ -29,7 +29,7 @@ function RepaymentsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const pageSize = 25;
+  const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
 
@@ -136,7 +136,7 @@ function RepaymentsPage() {
               </tbody>
             </table>
           </div>
-          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
+          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
       </div>
     </AppShell>

@@ -42,7 +42,7 @@ function LoansPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const pageSize = 25;
+  const [pageSize, setPageSize] = useState(25);
 
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
@@ -408,7 +408,7 @@ function LoansPage() {
                         {canApprove && l.status === "approved" && (
                           <Button size="sm" variant="default" onClick={() => disburse.mutate(l.id)}>Disburse</Button>
                         )}
-                        {(l.status === "active" || l.status === "in_arrears") && Number(l.outstanding_balance) > 0 && (
+                        {(l.status === "active" || l.status === "in_arrears" || l.status === "disbursed") && Number(l.outstanding_balance) > 0 && (
                           <RepaymentDialog loan={{
                             id: l.id,
                             loan_number: l.loan_number,
@@ -427,7 +427,7 @@ function LoansPage() {
             </tbody>
           </table>
           </div>
-          <Pagination page={safePage} pageSize={pageSize} total={filteredLoans.length} onPageChange={setPage} />
+          <Pagination page={safePage} pageSize={pageSize} total={filteredLoans.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
 
       </div>

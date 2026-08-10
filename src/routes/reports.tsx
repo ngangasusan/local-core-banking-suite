@@ -78,14 +78,15 @@ function ReportsPage() {
             <tbody>
               {loans.length === 0 && <tr><td colSpan={5} className="text-center py-12 text-muted-foreground">No loans recorded.</td></tr>}
               {loans.map((l) => {
-                const days = l.disbursed_at ? Math.floor((Date.now() - new Date(l.disbursed_at).getTime()) / 86400000) : 0;
+                const disbursedOn = l.disbursement_date ?? (l.disbursed_at ? String(l.disbursed_at).slice(0, 10) : null);
+                const days = disbursedOn ? Math.floor((Date.now() - new Date(disbursedOn).getTime()) / 86400000) : null;
                 return (
                   <tr key={l.id} className="border-t border-border">
                     <td className="px-4 py-3 font-mono text-xs">{l.loan_number}</td>
                     <td className="px-4 py-3">{l.customer?.full_name ?? "—"}</td>
                     <td className="px-4 py-3 capitalize">{l.status.replace("_", " ")}</td>
                     <td className="px-4 py-3 text-right font-mono">{fmt(Number(l.outstanding_balance))}</td>
-                    <td className="px-4 py-3 text-right">{l.disbursed_at ? days : "—"}</td>
+                    <td className="px-4 py-3 text-right">{days === null ? "—" : Math.max(days, 0)}</td>
                   </tr>
                 );
               })}

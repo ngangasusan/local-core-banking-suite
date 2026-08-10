@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { fmtKES } from "@/lib/format";
+import { computeInterestBreakdown, rulesFromProduct, type InterestRules } from "@/lib/loan-calc";
 
 export const Route = createFileRoute("/loan-products")({
   head: () => ({ meta: [{ title: "Loan Products — CoreBank" }] }),
@@ -335,5 +336,31 @@ function LoanProductsPage() {
       </Dialog>
       </div>
     </AppShell>
+  );
+}
+
+function InterestPreview({ rules }: { rules: InterestRules }) {
+  const [principal, setPrincipal] = useState(10000);
+  const [days, setDays] = useState(10);
+  const b = computeInterestBreakdown(principal, days, rules);
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <Label className="text-xs">Test principal</Label>
+          <Input type="number" value={principal} onChange={(e) => setPrincipal(Number(e.target.value))} />
+        </div>
+        <div className="flex-1">
+          <Label className="text-xs">Days</Label>
+          <Input type="number" value={days} onChange={(e) => setDays(Number(e.target.value))} />
+        </div>
+      </div>
+      <ol className="text-xs text-muted-foreground list-decimal ml-4 space-y-0.5">
+        {b.steps.map((s, i) => (<li key={i}>{s}</li>))}
+      </ol>
+      <div className="text-sm font-medium">
+        Interest {fmtKES(b.interest)} · Total payable {fmtKES(principal + b.interest)}
+      </div>
+    </div>
   );
 }

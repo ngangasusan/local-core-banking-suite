@@ -290,7 +290,39 @@ function LoanProductsPage() {
               <Label>Required credit score</Label>
               <Input type="number" value={form.required_credit_score} onChange={(e) => setForm({ ...form, required_credit_score: Number(e.target.value) })} />
             </div>
+            <div className="col-span-2 border-t border-border pt-4">
+              <h4 className="text-sm font-semibold">Interest tiers</h4>
+              <p className="text-xs text-muted-foreground">
+                Tier 1 (0–{form.tier1_days}d): minimum {(form.min_principal_pct * 100).toFixed(0)}% of principal ·
+                Tier 2 ({form.tier1_days + 1}–{form.tier2_days}d): MAX(minimum, {form.daily_per_1000}/1,000 per day) ·
+                Tier 3 ({form.tier2_days + 1}d+): {(form.monthly_pct * 100).toFixed(0)}% per {form.monthly_days}-day month.
+              </p>
+            </div>
+            <div>
+              <Label>Tier 1 end day</Label>
+              <Input type="number" value={form.tier1_days} onChange={(e) => setForm({ ...form, tier1_days: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Tier 2 end day</Label>
+              <Input type="number" value={form.tier2_days} onChange={(e) => setForm({ ...form, tier2_days: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Daily charge per 1,000 (tier 2)</Label>
+              <Input type="number" step="0.01" value={form.daily_per_1000} onChange={(e) => setForm({ ...form, daily_per_1000: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Monthly period (days)</Label>
+              <Input type="number" value={form.monthly_days} onChange={(e) => setForm({ ...form, monthly_days: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label>Monthly rate (decimal, e.g. 0.3 = 30%)</Label>
+              <Input type="number" step="0.01" value={form.monthly_pct} onChange={(e) => setForm({ ...form, monthly_pct: Number(e.target.value) })} />
+            </div>
+            <div className="col-span-2">
+              <InterestPreview rules={rulesFromProduct(form)} />
+            </div>
             <div className="col-span-2 flex items-center gap-3">
+
               <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
               <Label>Active</Label>
             </div>

@@ -408,7 +408,7 @@ function LoansPage() {
                         {canApprove && l.status === "approved" && (
                           <Button size="sm" variant="default" onClick={() => disburse.mutate(l.id)}>Disburse</Button>
                         )}
-                        {(l.status === "active" || l.status === "in_arrears") && Number(l.outstanding_balance) > 0 && (
+                        {(l.status === "active" || l.status === "in_arrears" || l.status === "disbursed") && Number(l.outstanding_balance) > 0 && (
                           <RepaymentDialog loan={{
                             id: l.id,
                             loan_number: l.loan_number,

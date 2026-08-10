@@ -8,7 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/Pagination";
-import { fmtKES as fmt } from "@/lib/format";
+import { fmtKES as fmt, fmtDate } from "@/lib/format";
 
 export const Route = createFileRoute("/repayments")({
   head: () => ({
@@ -116,7 +116,7 @@ function RepaymentsPage() {
                 )}
                 {paged.map((r) => (
                   <tr key={r.id} className="border-t border-border hover:bg-muted/30">
-                    <td className="px-4 py-3 text-xs">{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : "—"}</td>
+                    <td className="px-4 py-3 text-xs">{fmtDate(r.paid_at)}</td>
                     <td className="px-4 py-3 font-mono text-xs">{r.reference}</td>
                     <td className="px-4 py-3 font-mono text-xs">{r.loan?.loan_number ?? "—"}</td>
                     <td className="px-4 py-3">{r.loan?.customer?.full_name ?? "—"}</td>

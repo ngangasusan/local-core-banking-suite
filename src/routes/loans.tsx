@@ -18,7 +18,7 @@ import { computeTotalDue, loanDaysElapsed, isoDate, addDays } from "@/lib/loan-c
 import { Pagination } from "@/components/Pagination";
 import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";
-import { fmtKES as _fmtKES } from "@/lib/format";
+import { fmtKES as _fmtKES, fmtDate } from "@/lib/format";
 
 const LOAN_CSV_COLUMNS = [
   "loan_number", "customer_number", "customer_name", "principal", "interest_rate", "term_months",
@@ -378,8 +378,8 @@ function LoansPage() {
                       <div className="font-semibold">{fmt(remaining)}</div>
                       {isOpen && <div className="text-[10px] text-muted-foreground">of {fmt(total)} · day {days}</div>}
                     </td>
-                    <td className="px-4 py-3 text-xs">{disbursedOn ?? "—"}</td>
-                    <td className={"px-4 py-3 text-xs " + (isOverdue ? "text-destructive font-medium" : "")}>{l.due_date ?? "—"}{isOverdue && " ⚠"}</td>
+                    <td className="px-4 py-3 text-xs">{fmtDate(disbursedOn)}</td>
+                    <td className={"px-4 py-3 text-xs " + (isOverdue ? "text-destructive font-medium" : "")}>{fmtDate(l.due_date)}{isOverdue && " ⚠"}</td>
 
                     <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>

@@ -132,6 +132,12 @@ function LoanProductsPage() {
       mpesa_fee_threshold: Number(p.mpesa_fee_threshold), mpesa_fee_amount: Number(p.mpesa_fee_amount),
       early_repayment_days: p.early_repayment_days, required_credit_score: p.required_credit_score,
       is_active: p.is_active,
+      tier1_days: Number(p.tier1_days ?? 5),
+      tier2_days: Number(p.tier2_days ?? 14),
+      daily_per_1000: Number(p.daily_per_1000 ?? 20),
+      monthly_days: Number(p.monthly_days ?? 30),
+      monthly_pct: Number(p.monthly_pct ?? 0.3),
+
     });
     setOpen(true);
   };

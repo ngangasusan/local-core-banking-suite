@@ -157,12 +157,15 @@ export function computeTotalDue(
   principal: number,
   days: number,
   dueDate: string | null = null,
-): { interest: number; mpesa: number; lateFee: number; total: number } {
-  const interest = computeInterest(principal, days);
+  rules: InterestRules = DEFAULT_INTEREST_RULES,
+): { interest: number; mpesa: number; lateFee: number; total: number; breakdown: InterestBreakdown } {
+  const breakdown = computeInterestBreakdown(principal, days, rules);
+  const interest = breakdown.interest;
   const mpesa = days <= 5 ? mpesaSendCharge(principal) : 0;
   const lateFee = computeLateFee(principal, daysPastDue(dueDate));
-  return { interest, mpesa, lateFee, total: principal + interest + mpesa + lateFee };
+  return { interest, mpesa, lateFee, total: principal + interest + mpesa + lateFee, breakdown };
 }
+
 
 /** Aging bucket label for an outstanding loan. */
 export function agingBucket(dueDate: string | null, outstanding: number): "current" | "par_1_30" | "par_31_60" | "par_61_90" | "par_90_plus" {

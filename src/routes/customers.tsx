@@ -70,7 +70,7 @@ function CustomersPage() {
   const [open, setOpen] = useState(false);
   const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
   const [page, setPage] = useState(1);
-  const pageSize = 25;
+  const [pageSize, setPageSize] = useState(25);
 
 
   useEffect(() => {
@@ -421,7 +421,7 @@ function CustomersPage() {
               </tbody>
             </table>
           </div>
-          <Pagination page={safePage} pageSize={pageSize} total={(customers as any[]).length} onPageChange={setPage} />
+          <Pagination page={safePage} pageSize={pageSize} total={(customers as any[]).length} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
       </div>
 

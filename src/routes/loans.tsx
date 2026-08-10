@@ -42,7 +42,7 @@ function LoansPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const pageSize = 25;
+  const [pageSize, setPageSize] = useState(25);
 
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/auth" }); }, [user, loading, navigate]);
@@ -427,7 +427,7 @@ function LoansPage() {
             </tbody>
           </table>
           </div>
-          <Pagination page={safePage} pageSize={pageSize} total={filteredLoans.length} onPageChange={setPage} />
+          <Pagination page={safePage} pageSize={pageSize} total={filteredLoans.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
         </div>
 
       </div>

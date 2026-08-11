@@ -3,9 +3,23 @@
 // so the Lovable preview keeps working; set VITE_API_URL in your .env to flip
 // the frontend onto the Node backend.
 
-export const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "http://localhost:8080";
+const CONFIGURED_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "");
+export const API_BASE = CONFIGURED_BASE ?? "http://localhost:8080";
 export const USE_NODE_API = true;
+
+/**
+ * True when the API base resolves to the page's own origin (e.g. Vite dev server
+ * also running on :8080). Every request would then hit the frontend and return 404.
+ */
+export function apiBaseCollidesWithApp(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return new URL(API_BASE).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 
 const ACCESS_KEY = "cb.access";
 const USER_KEY = "cb.user";

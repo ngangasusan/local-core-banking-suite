@@ -49,7 +49,7 @@ function AuthPage() {
         else navigate({ to: "/" });
       }
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.code ?? e.message : (e as Error).message);
+      toast.error(e instanceof ApiError ? e.message : (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -64,7 +64,7 @@ function AuthPage() {
       await refresh();
       navigate({ to: "/" });
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.code ?? e.message : (e as Error).message);
+      toast.error(e instanceof ApiError ? e.message : (e as Error).message);
     } finally { setBusy(false); }
   };
 

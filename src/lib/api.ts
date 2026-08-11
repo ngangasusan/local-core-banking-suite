@@ -157,6 +157,9 @@ export async function apiFetch<T = unknown>(path: string, opts: Opts = {}): Prom
   const data = isJson ? await res.json().catch(() => null) : await res.text().catch(() => "");
   if (!res.ok) {
     const code = (data && typeof data === "object" && "error" in data) ? String((data as { error: unknown }).error) : undefined;
+    if (res.status === 404 && !code) {
+      throw new ApiError(404, `Backend endpoint not found: ${API_BASE}${path}. Is the Express API running and VITE_API_URL correct?`, "not_found", data);
+    }
     throw new ApiError(res.status, code ?? `HTTP ${res.status}`, code, data);
   }
   return data as T;

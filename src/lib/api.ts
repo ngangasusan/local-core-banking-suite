@@ -117,6 +117,14 @@ function buildUrl(path: string, query?: Opts["query"]) {
 
 export async function apiFetch<T = unknown>(path: string, opts: Opts = {}): Promise<T> {
   if (!USE_NODE_API) throw new ApiError(0, "Node API not configured (VITE_API_URL missing)");
+  if (apiBaseCollidesWithApp()) {
+    throw new ApiError(
+      0,
+      `API base ${API_BASE} is the same origin as this app, so requests hit the frontend and return 404. Set VITE_API_URL to your Express backend URL (e.g. http://localhost:4000) and restart the dev server.`,
+      "api_base_misconfigured",
+    );
+  }
+
   const doOnce = async (): Promise<Response> => {
     const headers: Record<string, string> = { ...(opts.headers ?? {}) };
     const token = getAccessToken();

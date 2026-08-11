@@ -3,9 +3,23 @@
 // so the Lovable preview keeps working; set VITE_API_URL in your .env to flip
 // the frontend onto the Node backend.
 
-export const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "http://localhost:8080";
+const CONFIGURED_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "");
+export const API_BASE = CONFIGURED_BASE ?? "http://localhost:8080";
 export const USE_NODE_API = true;
+
+/**
+ * True when the API base resolves to the page's own origin (e.g. Vite dev server
+ * also running on :8080). Every request would then hit the frontend and return 404.
+ */
+export function apiBaseCollidesWithApp(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return new URL(API_BASE).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 
 const ACCESS_KEY = "cb.access";
 const USER_KEY = "cb.user";
@@ -103,6 +117,14 @@ function buildUrl(path: string, query?: Opts["query"]) {
 
 export async function apiFetch<T = unknown>(path: string, opts: Opts = {}): Promise<T> {
   if (!USE_NODE_API) throw new ApiError(0, "Node API not configured (VITE_API_URL missing)");
+  if (apiBaseCollidesWithApp()) {
+    throw new ApiError(
+      0,
+      `API base ${API_BASE} is the same origin as this app, so requests hit the frontend and return 404. Set VITE_API_URL to your Express backend URL (e.g. http://localhost:4000) and restart the dev server.`,
+      "api_base_misconfigured",
+    );
+  }
+
   const doOnce = async (): Promise<Response> => {
     const headers: Record<string, string> = { ...(opts.headers ?? {}) };
     const token = getAccessToken();
@@ -135,6 +157,9 @@ export async function apiFetch<T = unknown>(path: string, opts: Opts = {}): Prom
   const data = isJson ? await res.json().catch(() => null) : await res.text().catch(() => "");
   if (!res.ok) {
     const code = (data && typeof data === "object" && "error" in data) ? String((data as { error: unknown }).error) : undefined;
+    if (res.status === 404 && !code) {
+      throw new ApiError(404, `Backend endpoint not found: ${API_BASE}${path}. Is the Express API running and VITE_API_URL correct?`, "not_found", data);
+    }
     throw new ApiError(res.status, code ?? `HTTP ${res.status}`, code, data);
   }
   return data as T;

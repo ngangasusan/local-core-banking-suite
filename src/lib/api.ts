@@ -231,6 +231,7 @@ export async function bootstrap(email: string, password: string, full_name: stri
 }
 
 export async function fetchMe(): Promise<ApiUser | null> {
+  if (BYPASS_AUTH) return getStoredUser();
   try {
     const u = await apiFetch<ApiUser>("/auth/me");
     setStoredUser(u);

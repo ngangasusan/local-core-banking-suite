@@ -180,7 +180,30 @@ export type LoginResult =
   | { kind: "ok"; access_token: string; user: ApiUser }
   | { kind: "mfa"; pre_auth_token: string };
 
+/** TEMPORARY: accept any credentials and create a local session (no backend call). */
+export const BYPASS_AUTH = true;
+
+const ALL_ROLES = ["super_admin", "admin", "manager", "teller", "loan_officer", "finance_officer", "auditor"];
+
+function makeLocalUser(email: string): ApiUser {
+  const name = email.split("@")[0]?.replace(/[._-]+/g, " ").trim() || "Demo User";
+  return {
+    id: "local-demo-user",
+    email: email || "demo@corebank.local",
+    full_name: name.replace(/\b\w/g, (c) => c.toUpperCase()),
+    roles: ALL_ROLES,
+    mfa_enrolled: false,
+    mfa: true,
+  };
+}
+
 export async function login(email: string, password: string): Promise<LoginResult> {
+  if (BYPASS_AUTH) {
+    const user = makeLocalUser(email);
+    setAccessToken("local-demo-token");
+    setStoredUser(user);
+    return { kind: "ok", access_token: "local-demo-token", user };
+  }
   const data = await apiFetch<{ access_token?: string; user?: ApiUser; mfa_required?: boolean; pre_auth_token?: string }>(
     "/auth/login",
     { method: "POST", body: { email, password }, autoRefresh: false }
@@ -191,6 +214,7 @@ export async function login(email: string, password: string): Promise<LoginResul
   setStoredUser(data.user);
   return { kind: "ok", access_token: data.access_token, user: data.user };
 }
+
 
 export async function verifyMfa(code: string, preAuthToken: string): Promise<ApiUser> {
   const data = await apiFetch<{ access_token: string; user: ApiUser }>(
@@ -207,6 +231,7 @@ export async function bootstrap(email: string, password: string, full_name: stri
 }
 
 export async function fetchMe(): Promise<ApiUser | null> {
+  if (BYPASS_AUTH) return getStoredUser();
   try {
     const u = await apiFetch<ApiUser>("/auth/me");
     setStoredUser(u);

@@ -5,9 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { sql } from "@/lib/sql-client";
+import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { computeInterest, computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 import { toast } from "sonner";
+
+const REPAYMENT_ERRORS: Record<string, string> = {
+  amount_exceeds_payable: "Amount exceeds total payable",
+  loan_not_found: "Loan not found",
+  not_found: "Loan not found",
+  loan_not_active: "Loan is not active — it cannot take repayments.",
+  four_eyes_violation: "You cannot approve or disburse a loan you created yourself.",
+  not_approved: "Loan must be approved before it can be disbursed.",
+  client_not_verified: "Client is not KYC-verified yet.",
+};
+
+function mapRepaymentError(e: unknown): string {
+  const code = e instanceof ApiError ? (e.code ?? "") : "";
+  return REPAYMENT_ERRORS[code] ?? (e as Error).message;
+}
+
 
 type LoanForRepayment = {
   id: string;

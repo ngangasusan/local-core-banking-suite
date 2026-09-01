@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { exec, query, type RowDataPacket } from "../db.js";
+import { exec, query, tx, type RowDataPacket } from "../db.js";
 import { requireAuth, requireRole } from "../auth/middleware.js";
 import { ah } from "../util/asyncRoute.js";
 import { newId } from "../util/uuid.js";
@@ -106,6 +106,24 @@ r.post("/", requireRole("admin", "super_admin", "manager", "loan_officer"),
     res.status(201).json({ id });
   }));
 
+// Submit a draft loan for approval (draft → pending).
+r.post("/:id/submit", requireRole("admin", "super_admin", "manager", "loan_officer"),
+  ah(async (req, res) => {
+    const [loan] = await query<RowDataPacket & { status: string }>(
+      "SELECT status FROM loans WHERE id = ? LIMIT 1", [req.params.id]
+    );
+    if (!loan) return res.status(404).json({ error: "not_found" });
+    if (loan.status !== "draft") return res.status(409).json({ error: "not_draft" });
+    await exec(
+      "UPDATE loans SET status = 'pending', submitted_for_approval_at = NOW(3) WHERE id = ?",
+      [req.params.id]
+    );
+    await writeAudit({ userId: req.user!.sub, action: "UPDATE", table: "loans",
+      recordId: req.params.id, newData: { status: "pending" } });
+    res.json({ ok: true });
+  }));
+
+
 // Approve / reject a pending loan (manager+). Disbursement is PR 3.
 const DecideBody = z.object({
   decision: z.enum(["approve", "reject"]),
@@ -115,27 +133,39 @@ const DecideBody = z.object({
 r.post("/:id/decision", requireRole("admin", "super_admin", "manager"),
   ah(async (req, res) => {
     const body = DecideBody.parse(req.body);
-    const [loan] = await query<RowDataPacket & { status: string; kyc_status: string }>(
-      `SELECT l.status, c.kyc_status FROM loans l JOIN customers c ON c.id = l.customer_id
-        WHERE l.id = ? LIMIT 1`, [req.params.id]
-    );
-    if (!loan) return res.status(404).json({ error: "not_found" });
-    if (loan.status !== "pending") return res.status(409).json({ error: "not_pending" });
-    if (body.decision === "approve" && loan.kyc_status !== "verified")
-      return res.status(409).json({ error: "client_not_verified" });
-
-
-
-    if (body.decision === "approve") {
-      await exec(
-        `UPDATE loans SET status = 'approved', approved_by = ? WHERE id = ?`,
-        [req.user!.sub, req.params.id]
-      );
-    } else {
-      await exec(
-        `UPDATE loans SET status = 'rejected', rejection_reason = ? WHERE id = ?`,
-        [body.rejection_reason ?? "rejected", req.params.id]
-      );
+    const bypassFourEyes = hasRole(req, "super_admin");
+    try {
+      await tx(async (cx) => {
+        const [rows] = await cx.query<(RowDataPacket & { status: string; kyc_status: string; created_by: string | null })[]>(
+          `SELECT l.status, l.created_by, c.kyc_status
+             FROM loans l JOIN customers c ON c.id = l.customer_id
+            WHERE l.id = ? FOR UPDATE`, [req.params.id]
+        );
+        const loan = rows[0];
+        if (!loan) throw new Error("not_found");
+        if (loan.status !== "pending") throw new Error("not_pending");
+        if (body.decision === "approve") {
+          if (loan.kyc_status !== "verified") throw new Error("client_not_verified");
+          if (!bypassFourEyes && loan.created_by && loan.created_by === req.user!.sub)
+            throw new Error("four_eyes_violation");
+          await cx.query(
+            `UPDATE loans SET status = 'approved', approved_by = ? WHERE id = ?`,
+            [req.user!.sub, req.params.id]
+          );
+        } else {
+          await cx.query(
+            `UPDATE loans SET status = 'rejected', rejection_reason = ? WHERE id = ?`,
+            [body.rejection_reason ?? "rejected", req.params.id]
+          );
+        }
+      });
+    } catch (e) {
+      const msg = (e as Error).message;
+      const map: Record<string, number> = {
+        not_found: 404, not_pending: 409, client_not_verified: 409, four_eyes_violation: 403,
+      };
+      if (map[msg]) return res.status(map[msg]).json({ error: msg });
+      throw e;
     }
     await writeAudit({
       userId: req.user!.sub, action: "UPDATE", table: "loans",
@@ -143,6 +173,7 @@ r.post("/:id/decision", requireRole("admin", "super_admin", "manager"),
     });
     res.json({ ok: true });
   }));
+
 
 // Disburse an approved loan: flips to active, sets dates, posts Dr 1100 / Cr 1000.
 const DisburseBody = z.object({ disbursement_date: z.string().date().optional() });

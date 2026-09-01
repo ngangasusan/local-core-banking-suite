@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search as SearchIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { sql } from "@/lib/sql-client";
+import { api, ApiError } from "@/lib/api";
+
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -14,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RepaymentDialog } from "@/components/RepaymentDialog";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
-import { computeTotalDue, loanDaysElapsed, isoDate, addDays, rulesFromProduct } from "@/lib/loan-calc";
+import { computeTotalDue, loanDaysElapsed, rulesFromProduct } from "@/lib/loan-calc";
 import { Pagination } from "@/components/Pagination";
 import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";
@@ -24,6 +26,19 @@ const LOAN_CSV_COLUMNS = [
   "loan_number", "customer_number", "customer_name", "principal", "interest_rate", "term_months",
   "method", "status", "outstanding_balance", "late_fees", "disbursement_date", "due_date", "purpose", "created_at",
 ];
+
+const LOAN_ERRORS: Record<string, string> = {
+  client_not_verified: "Client is not KYC-verified yet — verify the client before approving.",
+  four_eyes_violation: "You cannot approve or disburse a loan you created yourself.",
+  not_pending: "Loan is no longer pending approval.",
+  not_approved: "Loan must be approved before it can be disbursed.",
+  not_found: "Loan not found.",
+};
+
+function mapLoanError(e: unknown): string {
+  const code = e instanceof ApiError ? (e.code ?? "") : "";
+  return LOAN_ERRORS[code] ?? (e as Error).message;
+}
 
 
 export const Route = createFileRoute("/loans")({
@@ -124,54 +139,39 @@ function LoansPage() {
 
   const submit = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await sql.from("loans").update({ status: "pending", submitted_for_approval_at: new Date().toISOString() }).eq("id", id);
-      if (error) throw error;
+      await api.post(`/loans/${id}/submit`);
     },
     onSuccess: () => { toast.success("Submitted for approval"); qc.invalidateQueries({ queryKey: ["loans"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mapLoanError(e)),
   });
+
 
   const approve = useMutation({
     mutationFn: async (id: string) => {
-      const { data: check } = await sql
-        .from("loans")
-        .select("customer:customers!loans_customer_fk(full_name, kyc_status)")
-        .eq("id", id)
-        .maybeSingle();
-      const cust = (check as any)?.customer;
-      if (cust && cust.kyc_status !== "verified")
-        throw new Error(`${cust.full_name} is not KYC-verified yet — verify the client before approving.`);
-      const { error } = await sql.from("loans").update({ status: "approved", approved_by: user!.id }).eq("id", id);
-      if (error) throw error;
+      await api.post(`/loans/${id}/decision`, { decision: "approve" });
     },
-
     onSuccess: () => { toast.success("Loan approved"); qc.invalidateQueries({ queryKey: ["loans"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mapLoanError(e)),
   });
+
 
   const reject = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const { error } = await sql.from("loans").update({ status: "rejected", rejection_reason: reason, approved_by: user!.id }).eq("id", id);
-      if (error) throw error;
+      await api.post(`/loans/${id}/decision`, { decision: "reject", rejection_reason: reason });
     },
     onSuccess: () => { toast.success("Loan rejected"); qc.invalidateQueries({ queryKey: ["loans"] }); setRejectFor(null); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mapLoanError(e)),
   });
+
 
   const disburse = useMutation({
     mutationFn: async (id: string) => {
-      // Monthly term: due date is 30 days after the disbursement date.
-      const disbursement_date = isoDate(new Date());
-      const due_date = isoDate(addDays(new Date(disbursement_date + "T00:00:00"), 30));
-      const { error } = await sql
-        .from("loans")
-        .update({ status: "disbursed", disbursement_date, due_date, next_payment_date: due_date })
-        .eq("id", id);
-      if (error) throw error;
+      await api.post(`/loans/${id}/disburse`);
     },
     onSuccess: () => { toast.success("Loan disbursed"); qc.invalidateQueries({ queryKey: ["loans"] }); qc.invalidateQueries({ queryKey: ["dashboard-stats"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mapLoanError(e)),
   });
+
 
   if (loading || !user) return null;
   const canCreate = hasRole("admin") || hasRole("super_admin") || hasRole("manager") || hasRole("loan_officer");

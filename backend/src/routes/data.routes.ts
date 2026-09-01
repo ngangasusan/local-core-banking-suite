@@ -392,6 +392,7 @@ r.post("/:table", ah(async (req, res) => {
   assertWritable(table);
   const payload = (Array.isArray(req.body) ? req.body : [req.body]) as Record<string, unknown>[];
   if (!payload.length) return res.json({ rows: [], count: 0 });
+  assertDomainInsertAllowed(table, payload);
 
   const hasId = m.cols.get(table)!.has("id");
   const ids: string[] = [];
@@ -429,6 +430,7 @@ r.patch("/:table", ah(async (req, res) => {
   const table = req.params.table;
   const m = await assertTable(table);
   assertWritable(table);
+  assertDomainMutationAllowed(table);
   const params: unknown[] = [];
   const patch: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(req.body ?? {})) {
@@ -460,6 +462,7 @@ r.delete("/:table", ah(async (req, res) => {
   const table = req.params.table;
   const m = await assertTable(table);
   assertWritable(table);
+  assertDomainMutationAllowed(table);
   const params: unknown[] = [];
   const where = buildWhere(m, table, req.query as Record<string, unknown>, params);
   if (!where) throw new HttpError(400, "delete_requires_filter");

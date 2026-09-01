@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search as SearchIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { sql } from "@/lib/sql-client";
+import { api, ApiError } from "@/lib/api";
+
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";

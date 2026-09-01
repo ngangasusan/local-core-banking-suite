@@ -139,12 +139,12 @@ function LoansPage() {
 
   const submit = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await sql.from("loans").update({ status: "pending", submitted_for_approval_at: new Date().toISOString() }).eq("id", id);
-      if (error) throw error;
+      await api.post(`/loans/${id}/submit`);
     },
     onSuccess: () => { toast.success("Submitted for approval"); qc.invalidateQueries({ queryKey: ["loans"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mapLoanError(e)),
   });
+
 
   const approve = useMutation({
     mutationFn: async (id: string) => {

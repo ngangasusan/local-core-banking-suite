@@ -325,6 +325,29 @@ function assertWritable(table: string) {
   if (READ_ONLY.has(table)) throw new HttpError(403, `read_only_table:${table}`);
 }
 
+/* Financial tables must go through the domain services (waterfall allocation,
+   double-entry GL postings, four-eyes, audit trail). The generic /data shim is
+   read-only for them, with one exception: inserting draft/pending loan
+   applications (used by the CSV bulk import). */
+const DOMAIN_ONLY_HINT: Record<string, string> = {
+  loans: "use_domain_endpoint:/loans/:id/decision_or_disburse",
+  loan_repayments: "use_domain_endpoint:/repayments",
+};
+
+function assertDomainInsertAllowed(table: string, payload: Record<string, unknown>[]) {
+  if (table === "loan_repayments") throw new HttpError(403, DOMAIN_ONLY_HINT.loan_repayments);
+  if (table !== "loans") return;
+  const allowed = new Set([undefined, null, "draft", "pending"]);
+  for (const row of payload) {
+    if (!allowed.has(row.status as never)) throw new HttpError(403, DOMAIN_ONLY_HINT.loans);
+  }
+}
+
+function assertDomainMutationAllowed(table: string) {
+  if (DOMAIN_ONLY_HINT[table]) throw new HttpError(403, DOMAIN_ONLY_HINT[table]);
+}
+
+
 // MySQL DATETIME columns reject ISO-8601 strings ("2026-08-04T12:36:30.698Z").
 // The frontend sends `new Date().toISOString()`, so normalise any such value to
 // the MySQL literal form in UTC before it reaches the driver.

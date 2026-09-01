@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { exec, query, type RowDataPacket } from "../db.js";
+import { exec, query, tx, type RowDataPacket } from "../db.js";
 import { requireAuth, requireRole } from "../auth/middleware.js";
 import { ah } from "../util/asyncRoute.js";
 import { newId } from "../util/uuid.js";

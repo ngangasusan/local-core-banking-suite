@@ -27,6 +27,19 @@ const LOAN_CSV_COLUMNS = [
   "method", "status", "outstanding_balance", "late_fees", "disbursement_date", "due_date", "purpose", "created_at",
 ];
 
+const LOAN_ERRORS: Record<string, string> = {
+  client_not_verified: "Client is not KYC-verified yet — verify the client before approving.",
+  four_eyes_violation: "You cannot approve or disburse a loan you created yourself.",
+  not_pending: "Loan is no longer pending approval.",
+  not_approved: "Loan must be approved before it can be disbursed.",
+  not_found: "Loan not found.",
+};
+
+function mapLoanError(e: unknown): string {
+  const code = e instanceof ApiError ? (e.code ?? "") : "";
+  return LOAN_ERRORS[code] ?? (e as Error).message;
+}
+
 
 export const Route = createFileRoute("/loans")({
   head: () => ({ meta: [{ title: "Loans — CoreBank" }, { name: "description", content: "Loan origination, approval and disbursement." }] }),

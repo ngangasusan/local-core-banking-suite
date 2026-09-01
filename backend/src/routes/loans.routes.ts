@@ -106,6 +106,24 @@ r.post("/", requireRole("admin", "super_admin", "manager", "loan_officer"),
     res.status(201).json({ id });
   }));
 
+// Submit a draft loan for approval (draft → pending).
+r.post("/:id/submit", requireRole("admin", "super_admin", "manager", "loan_officer"),
+  ah(async (req, res) => {
+    const [loan] = await query<RowDataPacket & { status: string }>(
+      "SELECT status FROM loans WHERE id = ? LIMIT 1", [req.params.id]
+    );
+    if (!loan) return res.status(404).json({ error: "not_found" });
+    if (loan.status !== "draft") return res.status(409).json({ error: "not_draft" });
+    await exec(
+      "UPDATE loans SET status = 'pending', submitted_for_approval_at = NOW(3) WHERE id = ?",
+      [req.params.id]
+    );
+    await writeAudit({ userId: req.user!.sub, action: "UPDATE", table: "loans",
+      recordId: req.params.id, newData: { status: "pending" } });
+    res.json({ ok: true });
+  }));
+
+
 // Approve / reject a pending loan (manager+). Disbursement is PR 3.
 const DecideBody = z.object({
   decision: z.enum(["approve", "reject"]),

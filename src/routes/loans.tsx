@@ -157,12 +157,12 @@ function LoansPage() {
 
   const reject = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const { error } = await sql.from("loans").update({ status: "rejected", rejection_reason: reason, approved_by: user!.id }).eq("id", id);
-      if (error) throw error;
+      await api.post(`/loans/${id}/decision`, { decision: "reject", rejection_reason: reason });
     },
     onSuccess: () => { toast.success("Loan rejected"); qc.invalidateQueries({ queryKey: ["loans"] }); setRejectFor(null); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mapLoanError(e)),
   });
+
 
   const disburse = useMutation({
     mutationFn: async (id: string) => {

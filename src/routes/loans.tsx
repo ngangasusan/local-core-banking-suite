@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RepaymentDialog } from "@/components/RepaymentDialog";
 import { LoanDetailDialog } from "@/components/LoanDetailDialog";
-import { computeTotalDue, loanDaysElapsed, isoDate, addDays, rulesFromProduct } from "@/lib/loan-calc";
+import { computeTotalDue, loanDaysElapsed, rulesFromProduct } from "@/lib/loan-calc";
 import { Pagination } from "@/components/Pagination";
 import { ImportExport, type ImportResult } from "@/components/ImportExport";
 import { toast } from "sonner";

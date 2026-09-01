@@ -4,9 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { sql } from "@/lib/sql-client";
 import { api, ApiError } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
 import { computeInterest, computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 import { toast } from "sonner";
 
@@ -39,7 +37,6 @@ type LoanForRepayment = {
 export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<string>("");
-  const { user } = useAuth();
   const qc = useQueryClient();
 
   const days = loanDaysElapsed(loan.disbursement_date);

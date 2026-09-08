@@ -39,15 +39,9 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (USE_NODE_API) {
-        const res = await apiLogin(email, password);
-        if (res.kind === "mfa") setMfaChallenge({ preAuth: res.pre_auth_token });
-        else { await refresh(); navigate({ to: "/" }); }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) toast.error(error.message);
-        else navigate({ to: "/" });
-      }
+      const res = await apiLogin(email, password);
+      if (res.kind === "mfa") setMfaChallenge({ preAuth: res.pre_auth_token });
+      else { await refresh(); navigate({ to: "/" }); }
     } catch (e) {
       toast.error(e instanceof ApiError ? e.code ?? e.message : (e as Error).message);
     } finally {

@@ -66,19 +66,10 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (USE_NODE_API) {
-        // Bootstrap only works for the very first user; admins create staff via /users.
-        await apiBootstrap(email, password, fullName);
-        toast.success("Super-admin created. You can now sign in.");
-        setTab("signin");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email, password,
-          options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } },
-        });
-        if (error) toast.error(error.message);
-        else { toast.success("Account created. You can now sign in."); setTab("signin"); }
-      }
+      // Bootstrap only works for the very first user; admins create staff via /users.
+      await apiBootstrap(email, password, fullName);
+      toast.success("Super-admin created. You can now sign in.");
+      setTab("signin");
     } catch (e) {
       const msg = e instanceof ApiError ? (e.code === "already_bootstrapped" ? "System already has users — ask an admin to create your account." : e.code ?? e.message) : (e as Error).message;
       toast.error(msg);

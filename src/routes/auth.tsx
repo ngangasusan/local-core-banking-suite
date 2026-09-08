@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Building2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,15 +38,9 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (USE_NODE_API) {
-        const res = await apiLogin(email, password);
-        if (res.kind === "mfa") setMfaChallenge({ preAuth: res.pre_auth_token });
-        else { await refresh(); navigate({ to: "/" }); }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) toast.error(error.message);
-        else navigate({ to: "/" });
-      }
+      const res = await apiLogin(email, password);
+      if (res.kind === "mfa") setMfaChallenge({ preAuth: res.pre_auth_token });
+      else { await refresh(); navigate({ to: "/" }); }
     } catch (e) {
       toast.error(e instanceof ApiError ? e.code ?? e.message : (e as Error).message);
     } finally {
@@ -72,19 +65,10 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (USE_NODE_API) {
-        // Bootstrap only works for the very first user; admins create staff via /users.
-        await apiBootstrap(email, password, fullName);
-        toast.success("Super-admin created. You can now sign in.");
-        setTab("signin");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email, password,
-          options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } },
-        });
-        if (error) toast.error(error.message);
-        else { toast.success("Account created. You can now sign in."); setTab("signin"); }
-      }
+      // Bootstrap only works for the very first user; admins create staff via /users.
+      await apiBootstrap(email, password, fullName);
+      toast.success("Super-admin created. You can now sign in.");
+      setTab("signin");
     } catch (e) {
       const msg = e instanceof ApiError ? (e.code === "already_bootstrapped" ? "System already has users — ask an admin to create your account." : e.code ?? e.message) : (e as Error).message;
       toast.error(msg);

@@ -4,25 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { api, ApiError } from "@/lib/api";
+import { sql } from "@/lib/sql-client";
+import { useAuth } from "@/lib/auth";
 import { computeInterest, computeTotalDue, loanDaysElapsed } from "@/lib/loan-calc";
 import { toast } from "sonner";
-
-const REPAYMENT_ERRORS: Record<string, string> = {
-  amount_exceeds_payable: "Amount exceeds total payable",
-  loan_not_found: "Loan not found",
-  not_found: "Loan not found",
-  loan_not_active: "Loan is not active — it cannot take repayments.",
-  four_eyes_violation: "You cannot approve or disburse a loan you created yourself.",
-  not_approved: "Loan must be approved before it can be disbursed.",
-  client_not_verified: "Client is not KYC-verified yet.",
-};
-
-function mapRepaymentError(e: unknown): string {
-  const code = e instanceof ApiError ? (e.code ?? "") : "";
-  return REPAYMENT_ERRORS[code] ?? (e as Error).message;
-}
-
 
 type LoanForRepayment = {
   id: string;
@@ -37,6 +22,7 @@ type LoanForRepayment = {
 export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<string>("");
+  const { user } = useAuth();
   const qc = useQueryClient();
 
   const days = loanDaysElapsed(loan.disbursement_date);
@@ -57,24 +43,41 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
       if (numAmount <= 0) throw new Error("Amount must be positive");
       if (numAmount > remainingToSettle + 0.01) throw new Error("Amount exceeds total payable");
       const reference = "RP" + Date.now().toString().slice(-9);
-      // Domain endpoint: waterfall allocation, balance update, GL postings and audit
-      // all happen atomically on the backend.
-      await api.post("/repayments", { loan_id: loan.id, amount: numAmount, reference });
+      const { error: rerr } = await sql.from("loan_repayments").insert({
+        loan_id: loan.id, amount: numAmount, reference, posted_by: user!.id,
+      });
+      if (rerr) throw rerr;
+      await sql.from("transactions").insert({
+        reference, txn_type: "loan_repayment", amount: numAmount,
+        description: `Repayment for ${loan.loan_number}${rollover ? " (interest only — rolling over principal)" : ""}`,
+        performed_by: user!.id,
+      });
+      // GL postings (split by penalty / fees / interest / principal) are handled by the
+      // apply_repayment trigger using the waterfall allocation.
 
       // Rollover: create a new loan with same principal, fresh 30-day term.
       if (rollover) {
         const newNumber = "L" + Date.now().toString().slice(-9);
-        const { id: newLoanId } = await api.post<{ id: string }>("/loans", {
+        const { error: lerr } = await sql.from("loans").insert({
           loan_number: newNumber,
           customer_id: loan.customer_id,
           principal: loan.principal,
-          interest_rate: 0,
+          interest_rate: 0, // calc engine ignores this; rules are fixed
           term_months: 1,
           method: "flat",
           purpose: `Rollover from ${loan.loan_number}`,
+          outstanding_balance: loan.principal,
+          status: "approved",
+          rollover_of: loan.id,
+          created_by: user!.id,
+          approved_by: user!.id,
         });
-        await api.post(`/loans/${newLoanId}/decision`, { decision: "approve" });
-        await api.post(`/loans/${newLoanId}/disburse`);
+        if (lerr) throw lerr;
+        // Auto-disburse the rolled-over loan (trigger sets due_date and activates).
+        const { data: created } = await sql.from("loans").select("id").eq("loan_number", newNumber).single();
+        if (created) {
+          await sql.from("loans").update({ status: "disbursed" }).eq("id", created.id);
+        }
       }
     },
     onSuccess: () => {
@@ -86,9 +89,8 @@ export function RepaymentDialog({ loan }: { loan: LoanForRepayment }) {
       setOpen(false);
       setAmount("");
     },
-    onError: (e: Error) => toast.error(mapRepaymentError(e)),
+    onError: (e: Error) => toast.error(e.message),
   });
-
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

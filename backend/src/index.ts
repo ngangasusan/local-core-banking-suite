@@ -36,7 +36,19 @@ const app = express();
 
 app.set("trust proxy", 1);
 app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+// Allow a comma-separated list of origins, plus any localhost/127.0.0.1 port in dev.
+const allowedOrigins = env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean);
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true); // curl / same-origin
+      if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) return cb(null, true);
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true);
+      return cb(new Error(`CORS: origin not allowed: ${origin}`));
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(pinoHttp({ logger: log }));

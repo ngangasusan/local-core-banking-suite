@@ -30,7 +30,7 @@ const REFRESH_COOKIE = "rt";
 const cookieOpts = {
   httpOnly: true,
   secure: env.NODE_ENV === "production",
-  sameSite: "strict" as const,
+  sameSite: (env.NODE_ENV === "production" ? "strict" : "lax") as "strict" | "lax",
   path: "/auth",
 };
 
